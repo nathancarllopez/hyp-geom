@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "nodenext",
+    "target": "es2020",
+    "skipLibCheck": true
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}
