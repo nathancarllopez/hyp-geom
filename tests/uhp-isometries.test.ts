@@ -40,5 +40,5 @@ describe("Rotations about i", () => {
     const distAfter = hypDistance(I, result);
 
     expect(distBefore).toBeCloseTo(distAfter);
-  })
-})
+  });
+});

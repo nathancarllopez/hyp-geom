@@ -1,7 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { apply, CAYLEY, compose, determinant, IDENTITY, inverse, mobius, unitCircleRotation } from "../src/mobius-transformations";
-import { add, complex, divide, I, modulus, ONE, scale, ZERO } from "../src/complex-numbers";
-import { randomComplex, randomMobius, randomNonZeroComplex } from "./helpers/random";
+import {
+  apply,
+  CAYLEY,
+  compose,
+  determinant,
+  IDENTITY,
+  inverse,
+  mobius,
+  unitCircleRotation,
+} from "../src/mobius-transformations";
+import {
+  add,
+  complex,
+  divide,
+  I,
+  modulus,
+  ONE,
+  scale,
+  ZERO,
+} from "../src/complex-numbers";
+import {
+  randomComplex,
+  randomMobius,
+  randomNonZeroComplex,
+} from "./helpers/random";
 
 describe("Applying Mobius transformations", () => {
   it("Basic applying", () => {
@@ -9,7 +31,7 @@ describe("Applying Mobius transformations", () => {
       { re: 1, im: 0 },
       { re: 2, im: 0 },
       { re: 3, im: 0 },
-      { re: 4, im: 0 }
+      { re: 4, im: 0 },
     );
     const z = complex(5, 6);
     const denom = 19 ** 2 + 18 ** 2;
@@ -65,7 +87,9 @@ describe("Applying Mobius transformations", () => {
   it("Throws if denominator is zero", () => {
     const m = mobius(ONE, ZERO, ONE, ZERO);
 
-    expect(() => apply(m, ZERO)).toThrow("Denominator is zero in Mobius transformation application");
+    expect(() => apply(m, ZERO)).toThrow(
+      "Denominator is zero in Mobius transformation application",
+    );
   });
 
   it("Handles purely real numbers", () => {
@@ -73,11 +97,11 @@ describe("Applying Mobius transformations", () => {
       { re: 2, im: 0 },
       { re: 3, im: 0 },
       { re: 4, im: 0 },
-      { re: 5, im: 0 }
+      { re: 5, im: 0 },
     );
     const z = { re: 1, im: 0 };
     const result = apply(m, z);
-    
+
     expect(result.re).toBeCloseTo(5 / 9);
     expect(result.im).toBeCloseTo(0);
   });
@@ -87,11 +111,11 @@ describe("Applying Mobius transformations", () => {
       { re: 0, im: 2 },
       { re: 0, im: 3 },
       { re: 0, im: 4 },
-      { re: 0, im: 5 }
+      { re: 0, im: 5 },
     );
     const z = { re: 0, im: 1 };
     const result = apply(m, z);
-    
+
     expect(Number.isFinite(result.re)).toBe(true);
     expect(Number.isFinite(result.im)).toBe(true);
   });
@@ -101,11 +125,11 @@ describe("Applying Mobius transformations", () => {
       { re: -1, im: 0 },
       { re: -2, im: 0 },
       { re: -3, im: 0 },
-      { re: -4, im: 0 }
+      { re: -4, im: 0 },
     );
     const z = { re: -5, im: 0 };
     const result = apply(m, z);
-    
+
     expect(result.re).toBeCloseTo(3 / 11);
     expect(result.im).toBeCloseTo(0);
   });
@@ -115,7 +139,7 @@ describe("Applying Mobius transformations", () => {
       { re: 1e10, im: 0 },
       { re: 2e10, im: 0 },
       { re: 3e10, im: 0 },
-      { re: 4e10, im: 0 }
+      { re: 4e10, im: 0 },
     );
     const z = { re: 5e10, im: 0 };
     const result = apply(m, z);
@@ -140,7 +164,7 @@ describe("Determinant of a Mobius transformation", () => {
       { re: 1, im: 0 },
       { re: 2, im: 0 },
       { re: 3, im: 0 },
-      { re: 4, im: 0 }
+      { re: 4, im: 0 },
     );
     const result = determinant(m);
 
@@ -157,14 +181,14 @@ describe("Determinant of a Mobius transformation", () => {
 
   it("Determinant of the Cayley transformation", () => {
     const result = determinant(CAYLEY);
-    
+
     expect(result.re).toBeCloseTo(0);
     expect(result.im).toBeCloseTo(2);
   });
 
   it("Determinant is zero for singular transformation", () => {
     const m = mobius(ONE, ZERO, ZERO, scale(ONE, -1));
-    
+
     const result = determinant(m);
     expect(result.re).toBeCloseTo(-1);
     expect(result.im).toBeCloseTo(0);
@@ -183,9 +207,9 @@ describe("Determinant of a Mobius transformation", () => {
       { re: 0, im: 2 },
       { re: 0, im: 3 },
       { re: 0, im: 4 },
-      { re: 0, im: 5 }
+      { re: 0, im: 5 },
     );
-    
+
     const result = determinant(m);
     expect(result.re).toBeCloseTo(2);
     expect(result.im).toBeCloseTo(0);
@@ -196,9 +220,9 @@ describe("Determinant of a Mobius transformation", () => {
       { re: -1, im: 0 },
       { re: -2, im: 0 },
       { re: -3, im: 0 },
-      { re: -4, im: 0 }
+      { re: -4, im: 0 },
     );
-    
+
     const result = determinant(m);
     expect(result.re).toBeCloseTo(-2);
     expect(result.im).toBeCloseTo(0);
@@ -209,14 +233,14 @@ describe("Determinant of a Mobius transformation", () => {
       { re: 1e10, im: 0 },
       { re: 2e10, im: 0 },
       { re: 3e10, im: 0 },
-      { re: 4e10, im: 0 }
+      { re: 4e10, im: 0 },
     );
-    
+
     const result = determinant(m);
     expect(result.re).toBeCloseTo(-2e20);
     expect(result.im).toBeCloseTo(0);
   });
-})
+});
 
 describe("Inverse of a Mobius transformation", () => {
   it("Inverse of the identity is the identity", () => {
@@ -310,7 +334,7 @@ describe("Unit circle rotation", () => {
       expect(result.re).toBeCloseTo(otherResult.re);
       expect(result.im).toBeCloseTo(otherResult.im);
     }
-  })
+  });
 
   it("Points have their same modulus after rotation", () => {
     const z = randomComplex();
@@ -318,11 +342,9 @@ describe("Unit circle rotation", () => {
     const result = apply(rot, z);
 
     expect(modulus(z)).toBeCloseTo(modulus(result));
-  })
-})
+  });
+});
 
 describe("Finding the geodesic between points", () => {
-  it("Basic points", () => {
-    
-  })
-})
+  it("Basic points", () => {});
+});

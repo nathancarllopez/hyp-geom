@@ -25,7 +25,7 @@ export const add = (z: ComplexNumber, w: ComplexNumber): ComplexNumber => ({
 
 export const multiply = (
   z: ComplexNumber,
-  w: ComplexNumber
+  w: ComplexNumber,
 ): ComplexNumber => ({
   re: z.re * w.re - z.im * w.im,
   im: z.re * w.im + z.im * w.re,

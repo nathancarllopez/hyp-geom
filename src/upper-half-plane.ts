@@ -13,7 +13,10 @@ export const I: UpperHalfPlanePoint = upperHalfPlane(0, 1);
 
 export const hypDistance = (
   z: UpperHalfPlanePoint,
-  w: UpperHalfPlanePoint
+  w: UpperHalfPlanePoint,
 ): number => 2 * Math.asinh(eucDistance(z, w) / (2 * Math.sqrt(z.im * w.im)));
 
-export const geodesicBetweenPoints = (z: UpperHalfPlanePoint, w: UpperHalfPlanePoint) => {}
+export const geodesicBetweenPoints = (
+  z: UpperHalfPlanePoint,
+  w: UpperHalfPlanePoint,
+) => {};

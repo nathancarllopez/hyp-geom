@@ -27,12 +27,12 @@ export const mobius = (
   a: ComplexNumber,
   b: ComplexNumber,
   c: ComplexNumber,
-  d: ComplexNumber
+  d: ComplexNumber,
 ): MobiusTransformation => ({ a, b, c, d });
 
 export const apply = (
   m: MobiusTransformation,
-  z: ComplexNumber
+  z: ComplexNumber,
 ): ComplexNumber => {
   const numerator = add(multiply(m.a, z), m.b);
   const denominator = add(multiply(m.c, z), m.d);
@@ -61,7 +61,7 @@ export const inverse = (m: MobiusTransformation): MobiusTransformation => {
 
 export const compose = (
   m: MobiusTransformation,
-  n: MobiusTransformation
+  n: MobiusTransformation,
 ): MobiusTransformation => {
   const a = add(multiply(m.a, n.a), multiply(m.b, n.c));
   const b = add(multiply(m.a, n.b), multiply(m.b, n.d));

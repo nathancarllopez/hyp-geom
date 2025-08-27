@@ -148,7 +148,7 @@ describe("Conjugate of a complex number", () => {
   it("conjugate of purely real number is itself", () => {
     const z = complex(5, 0);
     const result = conjugate(z);
-    
+
     expect(result.re).toBe(5);
     expect(result.im).toBe(0);
   });
@@ -182,7 +182,7 @@ describe("Conjugate of a complex number", () => {
     const w = randomComplex();
 
     const conjSum = conjugate(add(z, w));
-    const sumConj = add(conjugate(z), conjugate(w))
+    const sumConj = add(conjugate(z), conjugate(w));
 
     expect(conjSum.re).toBeCloseTo(sumConj.re);
     expect(conjSum.im).toBeCloseTo(sumConj.im);
@@ -194,7 +194,7 @@ describe("Conjugate of a complex number", () => {
 
     const conjProduct = conjugate(multiply(z, w));
     const productConj = multiply(conjugate(z), conjugate(w));
-    
+
     expect(conjProduct.re).toBeCloseTo(productConj.re);
     expect(conjProduct.im).toBeCloseTo(productConj.im);
   });
@@ -446,7 +446,7 @@ describe("Division of complex numbers", () => {
   it("zero divided by any (non-zero) number is zero", () => {
     const z = randomNonZeroComplex();
     const result = divide(ZERO, z);
-    
+
     expect(result.re).toBeCloseTo(0);
     expect(result.im).toBeCloseTo(0);
   });
@@ -492,7 +492,7 @@ describe("Division of complex numbers", () => {
 
     const quotient = divide(z, w);
     const product = multiply(quotient, w);
-      
+
     expect(product.re).toBeCloseTo(z.re);
     expect(product.im).toBeCloseTo(z.im);
   });

@@ -3,9 +3,14 @@ import {
   compose,
   inverse,
   unitCircleRotation,
-  apply as mobApply
+  apply as mobApply,
 } from "./mobius-transformations";
-import { isIsometry, Isometry, MobiusTransformation, UpperHalfPlanePoint } from "./types";
+import {
+  isIsometry,
+  Isometry,
+  MobiusTransformation,
+  UpperHalfPlanePoint,
+} from "./types";
 import { upperHalfPlane } from "./upper-half-plane";
 
 export const uhpIsometry = (m: MobiusTransformation): Isometry => {
@@ -18,9 +23,13 @@ export const uhpIsometry = (m: MobiusTransformation): Isometry => {
 
 export const INVCAYLEY = uhpIsometry(inverse(CAYLEY));
 
-export const apply = (m: Isometry, z: UpperHalfPlanePoint): UpperHalfPlanePoint => {
+export const apply = (
+  m: Isometry,
+  z: UpperHalfPlanePoint,
+): UpperHalfPlanePoint => {
   const asComplexNumber = mobApply(m, z);
   return upperHalfPlane(asComplexNumber.re, asComplexNumber.im);
-}
+};
 
-export const rotateAboutI = (theta: number): Isometry => uhpIsometry(compose(INVCAYLEY, compose(unitCircleRotation(theta), CAYLEY)));
+export const rotateAboutI = (theta: number): Isometry =>
+  uhpIsometry(compose(INVCAYLEY, compose(unitCircleRotation(theta), CAYLEY)));

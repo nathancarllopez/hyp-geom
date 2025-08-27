@@ -4,22 +4,30 @@ import { randomComplex, randomUpperHalfPlanePoint } from "./helpers/random";
 
 describe("Upper Half Plane factory function", () => {
   it("accepts valid inputs", () => {
-    expect(() => upperHalfPlane(1, 2)).not.toThrow("Imaginary part must be positive");
+    expect(() => upperHalfPlane(1, 2)).not.toThrow(
+      "Imaginary part must be positive",
+    );
   });
 
   it("rejects invalid inputs", () => {
-    expect(() => upperHalfPlane(1, -2)).toThrow("Imaginary part must be positive");
+    expect(() => upperHalfPlane(1, -2)).toThrow(
+      "Imaginary part must be positive",
+    );
   });
 
   it("accepts random inputs", () => {
     const z = randomComplex();
 
     if (z.im > 0) {
-      expect(() => upperHalfPlane(z.re, z.im)).not.toThrow("Imaginary part must be positive");
+      expect(() => upperHalfPlane(z.re, z.im)).not.toThrow(
+        "Imaginary part must be positive",
+      );
     } else {
-      expect(() => upperHalfPlane(z.re, z.im)).toThrow("Imaginary part must be positive");
+      expect(() => upperHalfPlane(z.re, z.im)).toThrow(
+        "Imaginary part must be positive",
+      );
     }
-  })
+  });
 });
 
 describe("Hyperbolic distance formula", () => {
@@ -35,7 +43,7 @@ describe("Hyperbolic distance formula", () => {
     const result = hypDistance(z, z);
 
     expect(result).toBe(0);
-  })
+  });
 
   it("distance is always nonnegative", () => {
     const z = randomUpperHalfPlanePoint();
@@ -43,7 +51,7 @@ describe("Hyperbolic distance formula", () => {
     const result = hypDistance(z, w);
 
     expect(result).toBeGreaterThanOrEqual(0);
-  })
+  });
 
   it("distance between points is the same regardless of input order", () => {
     const z = randomUpperHalfPlanePoint();
@@ -53,16 +61,16 @@ describe("Hyperbolic distance formula", () => {
     const result2 = hypDistance(w, z);
 
     expect(result1).toBeCloseTo(result2);
-  })
+  });
 
   it("distance between points on a vertical line is (the absolute value of) the natural log of the ratio of their imaginary parts", () => {
     const z = randomUpperHalfPlanePoint();
-    const randIm = Math.random() * z.im
+    const randIm = Math.random() * z.im;
     const below = upperHalfPlane(z.re, randIm);
-    
+
     const result = hypDistance(z, below);
-    const manualCalc = Math.log(z.im / randIm) // We don't have to include the absolute value since z.im > randIm
+    const manualCalc = Math.log(z.im / randIm); // We don't have to include the absolute value since z.im > randIm
 
     expect(result).toBeCloseTo(manualCalc);
-  })
+  });
 });
