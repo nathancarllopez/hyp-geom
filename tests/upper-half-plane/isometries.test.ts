@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { hypDistance, I, upperHalfPlane } from "../src/upper-half-plane";
-import { ellipticAboutI, apply } from "../src/uhp-isometries";
-import { randomUpperHalfPlanePoint } from "./helpers/random";
+import { I, toUpperHalfPlanePoint, uhpDistance } from "../../src/upper-half-plane/geometry";
+import { ellipticAboutI, apply } from "../../src/upper-half-plane/isometries";
+import { randomUpperHalfPlanePoint } from "../helpers/random";
 
 describe("Rotations about i", () => {
   it("Rotating by pi sends e*i to (1 / e)*i", () => {
-    const z = upperHalfPlane(0, Math.E);
+    const z = toUpperHalfPlanePoint(0, Math.E);
     const halfRot = ellipticAboutI(Math.PI);
     const result = apply(halfRot, z);
 
@@ -49,11 +49,11 @@ describe("Rotations about i", () => {
 
   it("Rotating preserves the distance between a point and i", () => {
     const z = randomUpperHalfPlanePoint();
-    const distBefore = hypDistance(I, z);
+    const distBefore = uhpDistance(I, z);
     const theta = Math.random() * 2 * Math.PI;
     const rot = ellipticAboutI(theta);
     const result = apply(rot, z);
-    const distAfter = hypDistance(I, result);
+    const distAfter = uhpDistance(I, result);
 
     expect(distBefore).toBeCloseTo(distAfter);
   });

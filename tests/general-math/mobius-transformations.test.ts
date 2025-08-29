@@ -6,34 +6,34 @@ import {
   determinant,
   IDENTITY,
   inverse,
-  mobius,
+  toMobius,
   unitCircleRotation,
-} from "../src/mobius-transformations";
+} from "../../src/general-math/mobius-transformations";
 import {
   add,
-  complex,
+  toComplex,
   divide,
   I,
   modulus,
   ONE,
   scale,
   ZERO,
-} from "../src/complex-numbers";
+} from "../../src/general-math/complex-numbers";
 import {
   randomComplex,
   randomMobius,
   randomNonZeroComplex,
-} from "./helpers/random";
+} from "../helpers/random";
 
 describe("Applying Mobius transformations", () => {
   it("Basic applying", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 1, im: 0 },
       { re: 2, im: 0 },
       { re: 3, im: 0 },
       { re: 4, im: 0 },
     );
-    const z = complex(5, 6);
+    const z = toComplex(5, 6);
     const denom = 19 ** 2 + 18 ** 2;
     const result = apply(m, z);
 
@@ -85,7 +85,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Throws if denominator is zero", () => {
-    const m = mobius(ONE, ZERO, ONE, ZERO);
+    const m = toMobius(ONE, ZERO, ONE, ZERO);
 
     expect(() => apply(m, ZERO)).toThrow(
       "Denominator is zero in Mobius transformation application",
@@ -93,7 +93,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Handles purely real numbers", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 2, im: 0 },
       { re: 3, im: 0 },
       { re: 4, im: 0 },
@@ -107,7 +107,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Handles purely imaginary numbers", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 0, im: 2 },
       { re: 0, im: 3 },
       { re: 0, im: 4 },
@@ -121,7 +121,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Handles negative values", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: -1, im: 0 },
       { re: -2, im: 0 },
       { re: -3, im: 0 },
@@ -135,7 +135,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Handles large values without overflow", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 1e10, im: 0 },
       { re: 2e10, im: 0 },
       { re: 3e10, im: 0 },
@@ -149,7 +149,7 @@ describe("Applying Mobius transformations", () => {
   });
 
   it("Handles zero transformation (all zeros except d)", () => {
-    const m = mobius(ZERO, ZERO, ZERO, ONE);
+    const m = toMobius(ZERO, ZERO, ZERO, ONE);
     const z = randomComplex();
     const result = apply(m, z);
 
@@ -160,7 +160,7 @@ describe("Applying Mobius transformations", () => {
 
 describe("Determinant of a Mobius transformation", () => {
   it("Basic calculation", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 1, im: 0 },
       { re: 2, im: 0 },
       { re: 3, im: 0 },
@@ -187,7 +187,7 @@ describe("Determinant of a Mobius transformation", () => {
   });
 
   it("Determinant is zero for singular transformation", () => {
-    const m = mobius(ONE, ZERO, ZERO, scale(ONE, -1));
+    const m = toMobius(ONE, ZERO, ZERO, scale(ONE, -1));
 
     const result = determinant(m);
     expect(result.re).toBeCloseTo(-1);
@@ -203,7 +203,7 @@ describe("Determinant of a Mobius transformation", () => {
   });
 
   it("Determinant with purely imaginary coefficients", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 0, im: 2 },
       { re: 0, im: 3 },
       { re: 0, im: 4 },
@@ -216,7 +216,7 @@ describe("Determinant of a Mobius transformation", () => {
   });
 
   it("Determinant with negative values", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: -1, im: 0 },
       { re: -2, im: 0 },
       { re: -3, im: 0 },
@@ -229,7 +229,7 @@ describe("Determinant of a Mobius transformation", () => {
   });
 
   it("Determinant with large values", () => {
-    const m = mobius(
+    const m = toMobius(
       { re: 1e10, im: 0 },
       { re: 2e10, im: 0 },
       { re: 3e10, im: 0 },

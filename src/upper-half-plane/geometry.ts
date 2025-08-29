@@ -1,7 +1,8 @@
-import { eucDistance } from "./complex-numbers";
-import { ComplexNumber, isPositiveNumber, UpperHalfPlanePoint } from "./types";
+import { eucDistance } from "../general-math/complex-numbers";
+import { ComplexNumber, UpperHalfPlanePoint } from "../types-validators/types";
+import { isPositiveNumber } from "../types-validators/validators";
 
-export const upperHalfPlane = (re: number, im: number): UpperHalfPlanePoint => {
+export const toUpperHalfPlanePoint = (re: number, im: number): UpperHalfPlanePoint => {
   if (!isPositiveNumber(im)) {
     console.log("re, im:", re, im);
     throw new Error("Imaginary part must be positive");
@@ -9,9 +10,9 @@ export const upperHalfPlane = (re: number, im: number): UpperHalfPlanePoint => {
   return { re, im };
 };
 
-export const I: UpperHalfPlanePoint = upperHalfPlane(0, 1);
+export const I: UpperHalfPlanePoint = toUpperHalfPlanePoint(0, 1);
 
-export const hypDistance = (
+export const uhpDistance = (
   z: UpperHalfPlanePoint,
   w: UpperHalfPlanePoint,
 ): number => 2 * Math.asinh(eucDistance(z, w) / (2 * Math.sqrt(z.im * w.im)));

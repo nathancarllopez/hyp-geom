@@ -1,10 +1,10 @@
-import { ComplexNumber } from "./types";
+import { ComplexNumber } from "../types-validators/types";
 
 export const ZERO: ComplexNumber = { re: 0, im: 0 };
 export const ONE: ComplexNumber = { re: 1, im: 0 };
 export const I: ComplexNumber = { re: 0, im: 1 };
 
-export const complex = (re: number, im: number): ComplexNumber => ({ re, im });
+export const toComplex = (re: number, im: number): ComplexNumber => ({ re, im });
 
 export const scale = (z: ComplexNumber, lambda: number): ComplexNumber => ({
   re: lambda * z.re,
@@ -57,4 +57,4 @@ export const eucDistance = (z: ComplexNumber, w: ComplexNumber): number =>
   modulus(subtract(w, z));
 
 export const pointOnUnitCircle = (theta: number): ComplexNumber =>
-  complex(Math.cos(theta), Math.sin(theta));
+  toComplex(Math.cos(theta), Math.sin(theta));

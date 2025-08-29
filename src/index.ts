@@ -1,16 +1,16 @@
-import { Isometry } from "./types";
+import { Isometry } from "./types-validators/types";
 import {
   compose,
   ellipticAboutI,
   inverse,
   moveToI,
-  uhpIsometry,
-} from "./uhp-isometries";
-import { upperHalfPlane } from "./upper-half-plane";
+  toUhpIsometry,
+} from "./upper-half-plane/isometries";
+import { toUpperHalfPlanePoint } from "./upper-half-plane/geometry";
 
 // Rotation about re + i*im
 export const elliptic = (re: number, im: number, theta: number): Isometry => {
-  const centerOfRotation = upperHalfPlane(re, im);
+  const centerOfRotation = toUpperHalfPlanePoint(re, im);
   const moveCenterToI = moveToI(centerOfRotation);
 
   const mobius = compose(
@@ -18,5 +18,5 @@ export const elliptic = (re: number, im: number, theta: number): Isometry => {
     compose(ellipticAboutI(theta), moveCenterToI)
   );
 
-  return uhpIsometry(mobius);
+  return toUhpIsometry(mobius);
 };

@@ -8,7 +8,7 @@ import {
   scale,
   ZERO,
 } from "./complex-numbers";
-import { ComplexNumber, MobiusTransformation } from "./types";
+import { ComplexNumber, MobiusTransformation } from "../types-validators/types";
 
 export const IDENTITY: MobiusTransformation = {
   a: ONE,
@@ -23,7 +23,7 @@ export const CAYLEY: MobiusTransformation = {
   d: I,
 };
 
-export const mobius = (
+export const toMobius = (
   a: ComplexNumber,
   b: ComplexNumber,
   c: ComplexNumber,
@@ -56,7 +56,7 @@ export const inverse = (m: MobiusTransformation): MobiusTransformation => {
     throw new Error("Non-invertible transformation");
   }
 
-  return mobius(m.d, scale(m.b, -1), scale(m.c, -1), m.a);
+  return toMobius(m.d, scale(m.b, -1), scale(m.c, -1), m.a);
 };
 
 export const compose = (
@@ -68,8 +68,8 @@ export const compose = (
   const c = add(multiply(m.c, n.a), multiply(m.d, n.c));
   const d = add(multiply(m.c, n.b), multiply(m.d, n.d));
 
-  return mobius(a, b, c, d);
+  return toMobius(a, b, c, d);
 };
 
 export const unitCircleRotation = (theta: number) =>
-  mobius(pointOnUnitCircle(theta), ZERO, ZERO, ONE);
+  toMobius(pointOnUnitCircle(theta), ZERO, ZERO, ONE);

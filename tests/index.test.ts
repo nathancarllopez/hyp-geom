@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { randomUpperHalfPlanePoint } from "./helpers/random";
-import { hypDistance, upperHalfPlane } from "../src/upper-half-plane";
 import { elliptic } from "../src";
-import { apply } from "../src/uhp-isometries";
+import { apply } from "../src/upper-half-plane/isometries";
+import { toUpperHalfPlanePoint, uhpDistance } from "../src/upper-half-plane/geometry";
 
 describe("Elliptic isometry", () => {
   it("Rotating by pi about z = a + i*b sends u = a + i*(b*e) to v = a + i*(b/e)", () => {
     const center = randomUpperHalfPlanePoint();
-    const u = upperHalfPlane(center.re, center.im * Math.E);
-    const v = upperHalfPlane(center.re, center.im / Math.E);
+    const u = toUpperHalfPlanePoint(center.re, center.im * Math.E);
+    const v = toUpperHalfPlanePoint(center.re, center.im / Math.E);
 
     const halfRot = elliptic(center.re, center.im, Math.PI);
     const result = apply(halfRot, u);
@@ -57,12 +57,12 @@ describe("Elliptic isometry", () => {
   it("Rotating preserves the distance between a point and i", () => {
     const center = randomUpperHalfPlanePoint();
     const z = randomUpperHalfPlanePoint();
-    const distBefore = hypDistance(center, z);
+    const distBefore = uhpDistance(center, z);
 
     const theta = Math.random() * 2 * Math.PI;
     const rot = elliptic(center.re, center.im, theta);
     const result = apply(rot, z);
-    const distAfter = hypDistance(center, result);
+    const distAfter = uhpDistance(center, result);
 
     expect(distBefore).toBeCloseTo(distAfter);
   });

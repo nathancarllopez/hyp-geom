@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   scale,
   add,
-  complex,
+  toComplex,
   modulus,
   multiply,
   conjugate,
@@ -11,12 +11,12 @@ import {
   ZERO,
   I,
   ONE,
-} from "../src/complex-numbers";
-import { randomComplex, randomNonZeroComplex } from "./helpers/random";
+} from "../../src/general-math/complex-numbers";
+import { randomComplex, randomNonZeroComplex } from "../helpers/random";
 
 describe("Modulus of a complex number", () => {
   it("Basic modulus", () => {
-    const z = complex(1, 2);
+    const z = toComplex(1, 2);
     const result = modulus(z);
 
     expect(result).toBe(Math.sqrt(5));
@@ -29,14 +29,14 @@ describe("Modulus of a complex number", () => {
   });
 
   it("modulus of purely real number is absolute value", () => {
-    const z = complex(-7, 0);
+    const z = toComplex(-7, 0);
     const result = modulus(z);
 
     expect(result).toBe(7);
   });
 
   it("modulus of purely imaginary number is absolute value", () => {
-    const z = complex(0, -5);
+    const z = toComplex(0, -5);
     const result = modulus(z);
 
     expect(result).toBe(5);
@@ -86,7 +86,7 @@ describe("Scaling complex numbers", () => {
   });
 
   it("scaling by a positive real number", () => {
-    const z = complex(2, -3);
+    const z = toComplex(2, -3);
     const lambda = 4;
     const result = scale(z, lambda);
 
@@ -95,7 +95,7 @@ describe("Scaling complex numbers", () => {
   });
 
   it("scaling by a negative real number", () => {
-    const z = complex(1, 5);
+    const z = toComplex(1, 5);
     const lambda = -2;
     const result = scale(z, lambda);
 
@@ -104,7 +104,7 @@ describe("Scaling complex numbers", () => {
   });
 
   it("scaling zero yields zero", () => {
-    const z = complex(0, 0);
+    const z = toComplex(0, 0);
     const result = scale(z, 5);
 
     expect(result.re).toBe(0);
@@ -138,7 +138,7 @@ describe("Scaling complex numbers", () => {
 
 describe("Conjugate of a complex number", () => {
   it("Basic conjugate", () => {
-    const z = complex(2, 8);
+    const z = toComplex(2, 8);
     const result = conjugate(z);
 
     expect(result.re).toBe(2);
@@ -146,7 +146,7 @@ describe("Conjugate of a complex number", () => {
   });
 
   it("conjugate of purely real number is itself", () => {
-    const z = complex(5, 0);
+    const z = toComplex(5, 0);
     const result = conjugate(z);
 
     expect(result.re).toBe(5);
@@ -154,7 +154,7 @@ describe("Conjugate of a complex number", () => {
   });
 
   it("conjugate of purely imaginary number negates imaginary part", () => {
-    const z = complex(0, 7);
+    const z = toComplex(0, 7);
     const result = conjugate(z);
 
     expect(result.re).toBe(0);
@@ -210,8 +210,8 @@ describe("Conjugate of a complex number", () => {
 
 describe("Adding complex numbers", () => {
   it("basic addition", () => {
-    const z = complex(1, 2);
-    const w = complex(3, 4);
+    const z = toComplex(1, 2);
+    const w = toComplex(3, 4);
     const result = add(z, w);
 
     expect(result.re).toBe(4);
@@ -229,7 +229,7 @@ describe("Adding complex numbers", () => {
 
   it("adding zero gives the same result", () => {
     const z = randomComplex();
-    const zero = complex(0, 0);
+    const zero = toComplex(0, 0);
     const result = add(z, zero);
 
     expect(result.re).toBe(z.re);
@@ -269,8 +269,8 @@ describe("Adding complex numbers", () => {
   });
 
   it("adding purely real numbers", () => {
-    const z = complex(5, 0);
-    const w = complex(-3, 0);
+    const z = toComplex(5, 0);
+    const w = toComplex(-3, 0);
 
     const result = add(z, w);
 
@@ -279,8 +279,8 @@ describe("Adding complex numbers", () => {
   });
 
   it("adding purely imaginary numbers", () => {
-    const z = complex(0, 7);
-    const w = complex(0, -2);
+    const z = toComplex(0, 7);
+    const w = toComplex(0, -2);
 
     const result = add(z, w);
 
@@ -291,8 +291,8 @@ describe("Adding complex numbers", () => {
 
 describe("Multiplying complex numbers", () => {
   it("basic multiplication", () => {
-    const z = complex(1, 2);
-    const w = complex(3, 4);
+    const z = toComplex(1, 2);
+    const w = toComplex(3, 4);
     const result = multiply(z, w);
 
     expect(result.re).toBe(-5);
@@ -324,7 +324,7 @@ describe("Multiplying complex numbers", () => {
   });
 
   it("multiplying by i rotates by 90 degrees", () => {
-    const z = complex(2, 3);
+    const z = toComplex(2, 3);
     const result = multiply(z, I);
 
     expect(result.re).toBeCloseTo(-3);
@@ -364,8 +364,8 @@ describe("Multiplying complex numbers", () => {
   });
 
   it("multiplying purely imaginary numbers", () => {
-    const z = complex(0, 2);
-    const w = complex(0, 3);
+    const z = toComplex(0, 2);
+    const w = toComplex(0, 3);
     const result = multiply(z, w);
 
     expect(result.re).toBeCloseTo(-6);
@@ -389,7 +389,7 @@ describe("Inverse of complex numbers", () => {
   });
 
   it("inverse of purely real number", () => {
-    const z = complex(2, 0);
+    const z = toComplex(2, 0);
     const inv = inverse(z);
 
     expect(inv.re).toBeCloseTo(0.5);
@@ -397,7 +397,7 @@ describe("Inverse of complex numbers", () => {
   });
 
   it("inverse of purely imaginary number", () => {
-    const z = complex(0, 4);
+    const z = toComplex(0, 4);
     const inv = inverse(z);
 
     expect(inv.re).toBeCloseTo(0);
@@ -427,8 +427,8 @@ describe("Inverse of complex numbers", () => {
 
 describe("Division of complex numbers", () => {
   it("basic division", () => {
-    const z = complex(4, 2);
-    const w = complex(1, -1);
+    const z = toComplex(4, 2);
+    const w = toComplex(1, -1);
     const result = divide(z, w);
 
     expect(result.re).toBeCloseTo(1);
@@ -460,8 +460,8 @@ describe("Division of complex numbers", () => {
   });
 
   it("division of purely real numbers", () => {
-    const z = complex(6, 0);
-    const w = complex(2, 0);
+    const z = toComplex(6, 0);
+    const w = toComplex(2, 0);
     const result = divide(z, w);
 
     expect(result.re).toBeCloseTo(3);
@@ -469,8 +469,8 @@ describe("Division of complex numbers", () => {
   });
 
   it("division of purely imaginary numbers", () => {
-    const z = complex(0, 6);
-    const w = complex(0, 2);
+    const z = toComplex(0, 6);
+    const w = toComplex(0, 2);
     const result = divide(z, w);
 
     expect(result.re).toBeCloseTo(3);
@@ -478,8 +478,8 @@ describe("Division of complex numbers", () => {
   });
 
   it("division by i rotates by -90 degrees", () => {
-    const z = complex(2, 3);
-    const i = complex(0, 1);
+    const z = toComplex(2, 3);
+    const i = toComplex(0, 1);
     const result = divide(z, i);
 
     expect(result.re).toBeCloseTo(3);
@@ -498,8 +498,8 @@ describe("Division of complex numbers", () => {
   });
 
   it("division result is correct for negative numbers", () => {
-    const z = complex(-4, -2);
-    const w = complex(-1, 1);
+    const z = toComplex(-4, -2);
+    const w = toComplex(-1, 1);
     const result = divide(z, w);
 
     expect(result.re).toBeCloseTo(1);
@@ -507,8 +507,8 @@ describe("Division of complex numbers", () => {
   });
 
   it("division is not commutative", () => {
-    const z = complex(5, 2);
-    const w = complex(1, 3);
+    const z = toComplex(5, 2);
+    const w = toComplex(1, 3);
 
     const result1 = divide(z, w);
     const result2 = divide(w, z);
