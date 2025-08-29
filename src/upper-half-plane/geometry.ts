@@ -1,5 +1,5 @@
 import { eucDistance } from "../general-math/complex-numbers";
-import { ComplexNumber, UpperHalfPlanePoint } from "../types-validators/types";
+import { ComplexNumber, UhpGeodesic, UpperHalfPlanePoint } from "../types-validators/types";
 import { isPositiveNumber } from "../types-validators/validators";
 
 export const toUpperHalfPlanePoint = (
@@ -24,12 +24,7 @@ export const geodesicBetweenPoints = (
   z: UpperHalfPlanePoint,
   w: UpperHalfPlanePoint,
   tolerance: number = 0.01,
-): {
-  isVertical: boolean;
-  center: ComplexNumber;
-  radius: number;
-  points: ComplexNumber[];
-} => {
+): UhpGeodesic => {
   if (!isPositiveNumber(tolerance)) {
     throw new Error("Tolerance needs to be positive");
   }
