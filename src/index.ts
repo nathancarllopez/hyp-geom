@@ -15,7 +15,7 @@ export const elliptic = (re: number, im: number, theta: number): Isometry => {
 
   const mobius = compose(
     inverse(moveCenterToI),
-    compose(ellipticAboutI(theta), moveCenterToI)
+    compose(ellipticAboutI(theta), moveCenterToI),
   );
 
   return toUhpIsometry(mobius);

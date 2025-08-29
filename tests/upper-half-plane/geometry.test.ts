@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { geodesicBetweenPoints, uhpDistance, I, toUpperHalfPlanePoint } from "../../src/upper-half-plane/geometry";
+import {
+  geodesicBetweenPoints,
+  uhpDistance,
+  I,
+  toUpperHalfPlanePoint,
+} from "../../src/upper-half-plane/geometry";
 import { randomComplex, randomUpperHalfPlanePoint } from "../helpers/random";
 import { ComplexNumber } from "../../src/types-validators/types";
 
@@ -93,7 +98,7 @@ describe("Geodesic between two points", () => {
     expect(center.re).toBe(0);
     expect(center.im).toBe(0);
     expect(radius).toBeCloseTo(Math.sqrt(2));
-    
+
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
       const expected = expectedPoints[i];
@@ -106,10 +111,10 @@ describe("Geodesic between two points", () => {
   it("geodesic connecting i and 2 + sqrt(5) * i", () => {
     const z = toUpperHalfPlanePoint(2, Math.sqrt(5));
     const expectedPoints: ComplexNumber[] = [
-      { re: 2 - Math.sqrt(5), im: 0},
+      { re: 2 - Math.sqrt(5), im: 0 },
       I,
       z,
-      { re: 2 + Math.sqrt(5), im: 0 }
+      { re: 2 + Math.sqrt(5), im: 0 },
     ];
 
     const { isVertical, center, radius, points } = geodesicBetweenPoints(I, z);
@@ -132,10 +137,10 @@ describe("Geodesic between two points", () => {
     const z = randomUpperHalfPlanePoint();
     const w = toUpperHalfPlanePoint(z.re, z.im + 1);
     const expectedPoints: ComplexNumber[] = [
-      { re: z.re, im: 0},
+      { re: z.re, im: 0 },
       z,
       w,
-      { re: z.re, im: Infinity }
+      { re: z.re, im: Infinity },
     ];
 
     const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
@@ -153,4 +158,4 @@ describe("Geodesic between two points", () => {
       expect(point.im).toBeCloseTo(expected.im);
     }
   });
-})
+});

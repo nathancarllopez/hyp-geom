@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { I, toUpperHalfPlanePoint, uhpDistance } from "../../src/upper-half-plane/geometry";
+import {
+  I,
+  toUpperHalfPlanePoint,
+  uhpDistance,
+} from "../../src/upper-half-plane/geometry";
 import { ellipticAboutI, apply } from "../../src/upper-half-plane/isometries";
 import { randomUpperHalfPlanePoint } from "../helpers/random";
 

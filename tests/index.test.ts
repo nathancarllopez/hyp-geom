@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { randomUpperHalfPlanePoint } from "./helpers/random";
 import { elliptic } from "../src";
 import { apply } from "../src/upper-half-plane/isometries";
-import { toUpperHalfPlanePoint, uhpDistance } from "../src/upper-half-plane/geometry";
+import {
+  toUpperHalfPlanePoint,
+  uhpDistance,
+} from "../src/upper-half-plane/geometry";
 
 describe("Elliptic isometry", () => {
   it("Rotating by pi about z = a + i*b sends u = a + i*(b*e) to v = a + i*(b/e)", () => {
@@ -66,4 +69,4 @@ describe("Elliptic isometry", () => {
 
     expect(distBefore).toBeCloseTo(distAfter);
   });
-})
+});

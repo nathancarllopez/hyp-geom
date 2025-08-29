@@ -2,7 +2,10 @@ import { eucDistance } from "../general-math/complex-numbers";
 import { ComplexNumber, UpperHalfPlanePoint } from "../types-validators/types";
 import { isPositiveNumber } from "../types-validators/validators";
 
-export const toUpperHalfPlanePoint = (re: number, im: number): UpperHalfPlanePoint => {
+export const toUpperHalfPlanePoint = (
+  re: number,
+  im: number,
+): UpperHalfPlanePoint => {
   if (!isPositiveNumber(im)) {
     console.log("re, im:", re, im);
     throw new Error("Imaginary part must be positive");
@@ -20,15 +23,15 @@ export const uhpDistance = (
 export const geodesicBetweenPoints = (
   z: UpperHalfPlanePoint,
   w: UpperHalfPlanePoint,
-  tolerance: number = 0.01
+  tolerance: number = 0.01,
 ): {
-  isVertical: boolean,
-  center: ComplexNumber,
-  radius: number,
-  points: ComplexNumber[]
+  isVertical: boolean;
+  center: ComplexNumber;
+  radius: number;
+  points: ComplexNumber[];
 } => {
   if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive")
+    throw new Error("Tolerance needs to be positive");
   }
 
   const deltaRe = w.re - z.re;
@@ -39,13 +42,8 @@ export const geodesicBetweenPoints = (
       isVertical,
       center: { re: Infinity, im: Infinity },
       radius: Infinity,
-      points: [
-        { re: z.re, im: 0 },
-        z,
-        w,
-        { re: z.re, im: Infinity }
-      ]
-    }
+      points: [{ re: z.re, im: 0 }, z, w, { re: z.re, im: Infinity }],
+    };
   }
 
   const center: ComplexNumber = (() => {
@@ -53,7 +51,7 @@ export const geodesicBetweenPoints = (
     const midpointRe = (z.re + w.re) / 2;
 
     if (Math.abs(deltaIm) < tolerance) {
-      return { re: midpointRe, im: 0 }
+      return { re: midpointRe, im: 0 };
     }
 
     const midpointIm = (z.im + w.im) / 2;
@@ -69,13 +67,13 @@ export const geodesicBetweenPoints = (
     { re: center.re - radius, im: 0 },
     z,
     w,
-    { re: center.re + radius, im: 0 }
+    { re: center.re + radius, im: 0 },
   ];
 
   return {
     isVertical,
     center,
     radius,
-    points
+    points,
   };
 };

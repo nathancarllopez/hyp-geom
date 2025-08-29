@@ -33,19 +33,28 @@ export const apply = (
   return toUpperHalfPlanePoint(asComplexNumber.re, asComplexNumber.im);
 };
 
-export const inverse = (m: Isometry): Isometry => toUhpIsometry(toMobius(m.d, scale(m.b, -1), scale(m.c, -1), m.a))
+export const inverse = (m: Isometry): Isometry =>
+  toUhpIsometry(toMobius(m.d, scale(m.b, -1), scale(m.c, -1), m.a));
 
-export const compose = (m: Isometry, n: Isometry) => toUhpIsometry((mobCompose(m, n)))
+export const compose = (m: Isometry, n: Isometry) =>
+  toUhpIsometry(mobCompose(m, n));
 
 export const ellipticAboutI = (theta: number): Isometry =>
-  toUhpIsometry(mobCompose(INVCAYLEY, mobCompose(unitCircleRotation(theta), CAYLEY)));
+  toUhpIsometry(
+    mobCompose(INVCAYLEY, mobCompose(unitCircleRotation(theta), CAYLEY)),
+  );
 
 export const moveToI = (z: UpperHalfPlanePoint): Isometry => {
   const moveToImAxis = toMobius(ONE, toComplex(-z.re, 0), ZERO, ONE);
   const pointOnImAxis = mobApply(moveToImAxis, z);
 
-  const scaleDownToI = toMobius(toComplex(1 / pointOnImAxis.im, 0), ZERO, ZERO, ONE);
+  const scaleDownToI = toMobius(
+    toComplex(1 / pointOnImAxis.im, 0),
+    ZERO,
+    ZERO,
+    ONE,
+  );
   const composition = mobCompose(scaleDownToI, moveToImAxis);
 
   return toUhpIsometry(composition);
-}
+};
