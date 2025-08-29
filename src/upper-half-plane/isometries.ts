@@ -58,3 +58,15 @@ export const moveToI = (z: UpperHalfPlanePoint): Isometry => {
 
   return toUhpIsometry(composition);
 };
+
+export const elliptic = (re: number, im: number, theta: number): Isometry => {
+  const centerOfRotation = toUpperHalfPlanePoint(re, im);
+  const moveCenterToI = moveToI(centerOfRotation);
+
+  const mobius = compose(
+    inverse(moveCenterToI),
+    compose(ellipticAboutI(theta), moveCenterToI),
+  );
+
+  return toUhpIsometry(mobius);
+};
