@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { hypDistance, I, upperHalfPlane } from "../src/upper-half-plane";
+import { geodesicBetweenPoints, hypDistance, I, upperHalfPlane } from "../src/upper-half-plane";
 import { randomComplex, randomUpperHalfPlanePoint } from "./helpers/random";
+import { ZERO } from "../src/complex-numbers";
+import { ComplexNumber } from "../src/types";
 
 describe("Upper Half Plane factory function", () => {
   it("accepts valid inputs", () => {
@@ -74,3 +76,82 @@ describe("Hyperbolic distance formula", () => {
     expect(result).toBeCloseTo(manualCalc);
   });
 });
+
+describe("Geodesic between two points", () => {
+  it("geodesic connecting 1 + i and -1 + i", () => {
+    const z = upperHalfPlane(-1, 1);
+    const w = upperHalfPlane(1, 1);
+    const expectedPoints: ComplexNumber[] = [
+      { re: -Math.sqrt(2), im: 0 },
+      z,
+      w,
+      { re: Math.sqrt(2), im: 0 },
+    ];
+
+    const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
+
+    expect(isVertical).toBe(false);
+    expect(center.re).toBe(ZERO.re);
+    expect(center.im).toBe(ZERO.im);
+    expect(radius).toBeCloseTo(Math.sqrt(2));
+    
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      const expected = expectedPoints[i];
+
+      expect(point.re).toBeCloseTo(expected.re);
+      expect(point.im).toBeCloseTo(expected.im);
+    }
+  });
+
+  it("geodesic connecting i and 2 + sqrt(5) * i", () => {
+    const z = upperHalfPlane(2, Math.sqrt(5));
+    const expectedPoints: ComplexNumber[] = [
+      { re: 2 - Math.sqrt(5), im: 0},
+      I,
+      z,
+      { re: 2 + Math.sqrt(5), im: 0 }
+    ];
+
+    const { isVertical, center, radius, points } = geodesicBetweenPoints(I, z);
+
+    expect(isVertical).toBe(false);
+    expect(center.re).toBe(2);
+    expect(center.im).toBe(0);
+    expect(radius).toBe(Math.sqrt(5));
+
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      const expected = expectedPoints[i];
+
+      expect(point.re).toBeCloseTo(expected.re);
+      expect(point.im).toBeCloseTo(expected.im);
+    }
+  });
+
+  it("random vertical geodesic", () => {
+    const z = randomUpperHalfPlanePoint();
+    const w = upperHalfPlane(z.re, z.im + 1);
+    const expectedPoints: ComplexNumber[] = [
+      { re: z.re, im: 0},
+      z,
+      w,
+      { re: z.re, im: Infinity }
+    ];
+
+    const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
+
+    expect(isVertical).toBe(true);
+    expect(center.re).toBe(Infinity);
+    expect(center.im).toBe(Infinity);
+    expect(radius).toBe(Infinity);
+
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      const expected = expectedPoints[i];
+
+      expect(point.re).toBeCloseTo(expected.re);
+      expect(point.im).toBeCloseTo(expected.im);
+    }
+  });
+})
