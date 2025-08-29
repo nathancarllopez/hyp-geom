@@ -1,6 +1,6 @@
 {
   "name": "hyp-geom",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,17 +12,23 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "lint": "npx eslint ."
   },
   "keywords": [],
   "author": "Nathan Lopez",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@eslint/js": "^9.34.0",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.34.0",
+    "globals": "^16.3.0",
+    "jiti": "^2.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.41.0",
     "vitest": "^3.2.4"
   }
 }
