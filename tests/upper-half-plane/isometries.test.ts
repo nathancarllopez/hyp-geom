@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   I,
-  toUpperHalfPlanePoint,
+  toUhpPoint,
   uhpDistance,
 } from "../../src/upper-half-plane/geometry";
-import { ellipticAboutI, apply, elliptic } from "../../src/upper-half-plane/isometries";
-import { randomUpperHalfPlanePoint } from "../helpers/random";
+import {
+  ellipticAboutI,
+  apply,
+  elliptic,
+} from "../../src/upper-half-plane/isometries";
+import { randomUhpInteriorPoint } from "../helpers/random";
 
 describe("Elliptic about i, i.e., rotations about i", () => {
   it("Rotating by pi sends e*i to (1 / e)*i", () => {
-    const z = toUpperHalfPlanePoint(0, Math.E);
+    const z = toUhpPoint(0, Math.E);
     const halfRot = ellipticAboutI(Math.PI);
     const result = apply(halfRot, z);
 
@@ -18,7 +22,7 @@ describe("Elliptic about i, i.e., rotations about i", () => {
   });
 
   it("Rotating by 0 leaves the point unchanged", () => {
-    const z = randomUpperHalfPlanePoint();
+    const z = randomUhpInteriorPoint();
     const rot = ellipticAboutI(0);
     const result = apply(rot, z);
 
@@ -27,7 +31,7 @@ describe("Elliptic about i, i.e., rotations about i", () => {
   });
 
   it("Rotating by 2*pi leaves the point unchanged", () => {
-    const z = randomUpperHalfPlanePoint();
+    const z = randomUhpInteriorPoint();
     const rot = ellipticAboutI(2 * Math.PI);
     const result = apply(rot, z);
 
@@ -36,7 +40,7 @@ describe("Elliptic about i, i.e., rotations about i", () => {
   });
 
   it("Rotations that differ by a multiple of 2*pi are identical", () => {
-    const z = randomUpperHalfPlanePoint();
+    const z = randomUhpInteriorPoint();
     const theta = Math.random() * 2 * Math.PI;
     const rot = ellipticAboutI(theta);
     const result = apply(rot, z);
@@ -52,7 +56,7 @@ describe("Elliptic about i, i.e., rotations about i", () => {
   });
 
   it("Rotating preserves the distance between a point and i", () => {
-    const z = randomUpperHalfPlanePoint();
+    const z = randomUhpInteriorPoint();
     const distBefore = uhpDistance(I, z);
     const theta = Math.random() * 2 * Math.PI;
     const rot = ellipticAboutI(theta);
@@ -65,9 +69,9 @@ describe("Elliptic about i, i.e., rotations about i", () => {
 
 describe("Elliptic isometry, i.e., rotations around a point", () => {
   it("Rotating by pi about z = a + i*b sends u = a + i*(b*e) to v = a + i*(b/e)", () => {
-    const center = randomUpperHalfPlanePoint();
-    const u = toUpperHalfPlanePoint(center.re, center.im * Math.E);
-    const v = toUpperHalfPlanePoint(center.re, center.im / Math.E);
+    const center = randomUhpInteriorPoint();
+    const u = toUhpPoint(center.re, center.im * Math.E);
+    const v = toUhpPoint(center.re, center.im / Math.E);
 
     const halfRot = elliptic(center.re, center.im, Math.PI);
     const result = apply(halfRot, u);
@@ -77,8 +81,8 @@ describe("Elliptic isometry, i.e., rotations around a point", () => {
   });
 
   it("Rotating by 0 leaves the point unchanged", () => {
-    const center = randomUpperHalfPlanePoint();
-    const z = randomUpperHalfPlanePoint();
+    const center = randomUhpInteriorPoint();
+    const z = randomUhpInteriorPoint();
     const rot = elliptic(center.re, center.im, 0);
     const result = apply(rot, z);
 
@@ -87,8 +91,8 @@ describe("Elliptic isometry, i.e., rotations around a point", () => {
   });
 
   it("Rotating by 2*pi leaves the point unchanged", () => {
-    const center = randomUpperHalfPlanePoint();
-    const z = randomUpperHalfPlanePoint();
+    const center = randomUhpInteriorPoint();
+    const z = randomUhpInteriorPoint();
     const rot = elliptic(center.re, center.im, 2 * Math.PI);
     const result = apply(rot, z);
 
@@ -97,8 +101,8 @@ describe("Elliptic isometry, i.e., rotations around a point", () => {
   });
 
   it("Rotations that differ by a multiple of 2*pi are identical", () => {
-    const center = randomUpperHalfPlanePoint();
-    const z = randomUpperHalfPlanePoint();
+    const center = randomUhpInteriorPoint();
+    const z = randomUhpInteriorPoint();
     const theta = Math.random() * 2 * Math.PI;
     const rot = elliptic(center.re, center.im, theta);
     const result = apply(rot, z);
@@ -114,8 +118,8 @@ describe("Elliptic isometry, i.e., rotations around a point", () => {
   });
 
   it("Rotating preserves the distance between a point and i", () => {
-    const center = randomUpperHalfPlanePoint();
-    const z = randomUpperHalfPlanePoint();
+    const center = randomUhpInteriorPoint();
+    const z = randomUhpInteriorPoint();
     const distBefore = uhpDistance(center, z);
 
     const theta = Math.random() * 2 * Math.PI;
