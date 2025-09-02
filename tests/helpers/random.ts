@@ -3,18 +3,27 @@ import { toMobius } from "../../src/general-math/mobius-transformations";
 import {
   ComplexNumber,
   MobiusTransformation,
-  UpperHalfPlanePoint,
+  UhpBoundaryPoint,
+  UhpInteriorPoint,
 } from "../../src/types-validators/types";
-import { toUpperHalfPlanePoint } from "../../src/upper-half-plane/geometry";
+import { toUhpInteriorPoint } from "../../src/upper-half-plane/geometry";
+
+export const randomReal = (upperBound: number = 1e5, isPositive: boolean = false): number => {
+  let randomPositive: number;
+
+  do {
+    randomPositive = Math.random() * upperBound;
+  } while (randomPositive === 0)
+  
+  if (isPositive) return randomPositive;
+  return randomPositive * 2 - upperBound;
+}
 
 export const randomComplex = (upperBound: number = 1e5): ComplexNumber => {
-  const re = upperBound * Math.random();
-  const im = upperBound * Math.random();
+  const re = randomReal(upperBound);
+  const im = randomReal(upperBound);
 
-  const flipRe = Math.random() > 0.5;
-  const flipIm = Math.random() > 0.5;
-
-  return toComplex(flipRe ? -re : re, flipIm ? -im : im);
+  return toComplex(re, im);
 };
 
 export const randomNonZeroComplex = (
@@ -45,15 +54,22 @@ export const randomMobius = (
   return toMobius(a, b, c, d);
 };
 
-export const randomUpperHalfPlanePoint = (
+export const randomUhpBoundaryPoint = (
   upperBound: number = 1e5,
-): UpperHalfPlanePoint => {
+): UhpBoundaryPoint => {
+  const z = randomComplex(upperBound);
+  return { re: z.re, im: 0 };
+};
+
+export const randomUhpInteriorPoint = (
+  upperBound: number = 1e5,
+): UhpInteriorPoint => {
   let z: ComplexNumber;
 
   do {
     z = randomNonZeroComplex(upperBound);
   } while (z.im === 0);
 
-  if (z.im < 0) return toUpperHalfPlanePoint(z.re, -z.im);
-  return toUpperHalfPlanePoint(z.re, z.im);
+  if (z.im < 0) return toUhpInteriorPoint(z.re, -z.im);
+  return toUhpInteriorPoint(z.re, z.im);
 };
