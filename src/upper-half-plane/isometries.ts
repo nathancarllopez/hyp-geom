@@ -10,27 +10,21 @@ import {
 import {
   Isometry,
   MobiusTransformation,
-  UpperHalfPlanePoint,
+  UhpPoint,
 } from "../types-validators/types";
 import { isIsometry } from "../types-validators/validators";
-import { toUpperHalfPlanePoint } from "./geometry";
+import { toUhpPoint } from "./geometry";
 
 export const toUhpIsometry = (m: MobiusTransformation): Isometry => {
-  if (!isIsometry(m)) {
-    console.log("m:", m);
-    throw new Error("Determinant must be nonzero");
-  }
-  return m;
+  if (isIsometry(m)) return m;
+  throw new Error("Determinant must be nonzero");
 };
 
 export const INVCAYLEY = toUhpIsometry(mobInverse(CAYLEY));
 
-export const apply = (
-  m: Isometry,
-  z: UpperHalfPlanePoint,
-): UpperHalfPlanePoint => {
+export const apply = (m: Isometry, z: UhpPoint): UhpPoint => {
   const asComplexNumber = mobApply(m, z);
-  return toUpperHalfPlanePoint(asComplexNumber.re, asComplexNumber.im);
+  return toUhpPoint(asComplexNumber.re, asComplexNumber.im);
 };
 
 export const inverse = (m: Isometry): Isometry =>
@@ -44,7 +38,7 @@ export const ellipticAboutI = (theta: number): Isometry =>
     mobCompose(INVCAYLEY, mobCompose(unitCircleRotation(theta), CAYLEY)),
   );
 
-export const moveToI = (z: UpperHalfPlanePoint): Isometry => {
+export const moveToI = (z: UhpPoint): Isometry => {
   const moveToImAxis = toMobius(ONE, toComplex(-z.re, 0), ZERO, ONE);
   const pointOnImAxis = mobApply(moveToImAxis, z);
 
@@ -60,7 +54,7 @@ export const moveToI = (z: UpperHalfPlanePoint): Isometry => {
 };
 
 export const elliptic = (re: number, im: number, theta: number): Isometry => {
-  const centerOfRotation = toUpperHalfPlanePoint(re, im);
+  const centerOfRotation = toUhpPoint(re, im);
   const moveCenterToI = moveToI(centerOfRotation);
 
   const mobius = compose(
