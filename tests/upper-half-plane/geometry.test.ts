@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  geodesicBetweenPoints,
+  geodesicThroughPoints,
   uhpDistance,
   I,
   toUhpPoint,
@@ -9,10 +9,14 @@ import {
   toUhpInteriorPoint,
   circleCenterAndBdryPoint,
   horocyleGivenCenter,
-  horocycleGivenBaseAndBdry,
+  horocycleGivenBaseAndOnHor,
   ZERO,
   toPointAtInfinity,
   toUhpBoundaryPoint,
+  positionOnGeodesic,
+  tangentAtPointOnGeodesic,
+  ONE,
+  angleFromThreePoints,
 } from "../../src/upper-half-plane/geometry";
 import {
   randomComplex,
@@ -20,7 +24,8 @@ import {
   randomUhpBoundaryPoint,
   randomUhpInteriorPoint,
 } from "../helpers/random";
-import { ComplexNumber, UhpPoint } from "../../src/types-validators/types";
+import { ComplexNumber, UhpBoundaryPoint, UhpPoint } from "../../src/types-validators/types";
+import { scale } from "../../src/general-math/complex-numbers";
 
 describe("Upper Half Plane factory function", () => {
   it("accept valid inputs", () => {
@@ -187,13 +192,196 @@ describe("Hyperbolic distance formula", () => {
   });
 });
 
+describe("Angles from points", () => {
+  describe("Position of points on geodesics", () => {
+      it("the position of i on the geodesic with endpoints -1 and +1 is pi / 2", () => {
+      const geod = geodesicThroughPoints(
+        toUhpBoundaryPoint(1, 0),
+        toUhpBoundaryPoint(-1, 0)
+      );
+      const result = positionOnGeodesic(I, geod);
+
+      expect(result).toBeCloseTo(Math.PI / 2);
+    })
+
+    it("the position of cos(theta) + i*sin(theta) on the geodesic with endpoints -1 and +1 is theta", () => {
+      const theta = randomReal(Math.PI, true);
+      const p = toUhpInteriorPoint(Math.cos(theta), Math.sin(theta));
+      const geod = geodesicThroughPoints(
+        toUhpBoundaryPoint(1, 0),
+        toUhpBoundaryPoint(-1, 0)
+      );
+
+      const result = positionOnGeodesic(p, geod);
+
+      expect(result).toBeCloseTo(theta);
+    });
+
+    it("the position of a the left and right endpoint, respectively, of a geodesic is pi and 0, respectively", () => {
+      const leftEndpoint = randomUhpBoundaryPoint();
+      const rightEndpoint: UhpBoundaryPoint = { re: 2 * Math.abs(leftEndpoint.re), im: 0 };
+      const geod = geodesicThroughPoints(leftEndpoint, rightEndpoint);
+
+      const leftPosition = positionOnGeodesic(leftEndpoint, geod);
+      const rightPosition = positionOnGeodesic(rightEndpoint, geod);
+
+      expect(leftPosition).toBeCloseTo(Math.PI);
+      expect(rightPosition).toBeCloseTo(0);
+    });
+
+    it("throws if the geodesic is vertical", () => {
+      const randomBdryPoint = randomUhpBoundaryPoint();
+      const geod = geodesicThroughPoints(randomBdryPoint, UhpINFINITY);
+      const p = toUhpInteriorPoint(randomBdryPoint.re, 1);
+
+      expect(() => positionOnGeodesic(p, geod)).toThrow("Points on vertical geodesics are not parameterized by angle");
+    });
+  });
+
+  describe("Tangents on geodesics", () => {
+    it("tangent at i on 1 -> -1 geodesic is 1 or -1", () => {
+      const posTangent = tangentAtPointOnGeodesic(I, ONE);
+      const negTangent = tangentAtPointOnGeodesic(I, toUhpBoundaryPoint(-1, 0));
+
+      expect(posTangent.re).toBeCloseTo(1);
+      expect(posTangent.im).toBeCloseTo(0);
+      expect(negTangent.re).toBeCloseTo(-1);
+      expect(negTangent.im).toBeCloseTo(0);
+    });
+
+    it("tangent at i on 0 -> inf geodesic is i or -i", () => {
+      const posTangent = tangentAtPointOnGeodesic(I, UhpINFINITY);
+      const negTangent = tangentAtPointOnGeodesic(I, ZERO);
+
+      expect(posTangent.re).toBeCloseTo(0);
+      expect(posTangent.im).toBeCloseTo(1);
+      expect(negTangent.re).toBeCloseTo(0);
+      expect(negTangent.im).toBeCloseTo(-1);
+    });
+
+    it("tangent at 1 + i on 0 -> 2 geodesic is 1 or -1", () => {
+      const onePlusI = toUhpInteriorPoint(1, 1)
+      const two = toUhpBoundaryPoint(2, 0);
+
+      const posTangent = tangentAtPointOnGeodesic(onePlusI, two);
+      const negTangent = tangentAtPointOnGeodesic(onePlusI, ZERO);
+
+      expect(posTangent.re).toBeCloseTo(1);
+      expect(posTangent.im).toBeCloseTo(0);
+      expect(negTangent.re).toBeCloseTo(-1);
+      expect(negTangent.im).toBeCloseTo(0);
+    });
+
+    it("if v is the tangent vector on geodesic at p in one direction, then -v is the tangent vector at p in the other direction", () => {
+      const p = randomUhpInteriorPoint();
+      const geod = geodesicThroughPoints(p, randomUhpInteriorPoint());
+      const theta = positionOnGeodesic(p, geod);
+
+      const { center, radius } = geod;
+      const pRight = toUhpInteriorPoint(
+        radius * Math.cos(theta / 2) + center.re,
+        radius * Math.sin(theta / 2)
+      );
+      const pLeft = toUhpInteriorPoint(
+        radius * Math.cos((theta + Math.PI) / 2) + center.re,
+        radius * Math.sin((theta + Math.PI) / 2)
+      );
+
+      const vRight = tangentAtPointOnGeodesic(p, pRight);
+      const vLeft = tangentAtPointOnGeodesic(p, pLeft);
+      const vLeftScaled = scale(vLeft, -1)
+
+      expect(vRight.re).toBeCloseTo(vLeftScaled.re);
+      expect(vRight.im).toBeCloseTo(vLeftScaled.im);
+    })
+  }) 
+    
+  describe("Angles", () => {
+      it("angle from 1, i, and infinity is pi / 2", () => {
+      const result = angleFromThreePoints(ONE, I, UhpINFINITY)
+      expect(result).toBeCloseTo(Math.PI / 2);
+    });
+
+    it("angle from 1, i, and -1 is pi", () => {
+      const result = angleFromThreePoints(ONE, I, toUhpBoundaryPoint(-1, 0));
+      expect(result).toBeCloseTo(Math.PI);
+    });
+
+    it("if the middle point is infinity, then the angle is zero", () => {
+      const result = angleFromThreePoints(
+        randomUhpInteriorPoint(),
+        UhpINFINITY,
+        randomUhpInteriorPoint()
+      );
+      expect(result).toBe(0);
+    });
+
+    it("if the two outer points are identical, then the angle is zero", () => {
+      const outer = randomUhpInteriorPoint();
+      const result = angleFromThreePoints(outer, randomUhpInteriorPoint(), outer);
+
+      expect(result).toBe(0);
+    });
+
+    it("the angle remains the same if the order of the points are reversed", () => {
+      const p = randomUhpInteriorPoint();
+      const q = randomUhpInteriorPoint();
+      const r = randomUhpInteriorPoint();
+
+      const result1 = angleFromThreePoints(p, q, r);
+      const result2 = angleFromThreePoints(r, q, p);
+
+      expect(result1).toBeCloseTo(result2);
+    });
+
+    it("co-linear triples return 0", () => {
+      const p = randomUhpInteriorPoint();
+      const r = randomUhpInteriorPoint();
+      const { center, radius } = geodesicThroughPoints(p, r);
+      
+      const theta = Math.PI * Math.random();
+      const q = toUhpInteriorPoint(
+        radius * Math.cos(theta) + center.re,
+        radius * Math.sin(theta)
+      );
+
+      const result = angleFromThreePoints(p, q, r);
+
+      expect(result).toBeCloseTo(0);
+    });
+
+    it("the angle from -1 to 3*i to 1 is ", () => {
+      const negOne = toUhpBoundaryPoint(-1, 0);
+      const threeI = toUhpInteriorPoint(0, 3);
+      const result = angleFromThreePoints(negOne, threeI, ONE);
+
+      expect(result).toBeCloseTo(Math.acos(0.28))
+    })
+
+    it("the angle from -1 to i * B to 1 as B -> infinity is a decreasing sequence", () => {
+      const negOne = toUhpBoundaryPoint(-1, 0);
+
+      let q = toUhpInteriorPoint(0, 1);
+      let angle = angleFromThreePoints(negOne, q, ONE);
+
+      for (let _ = 0; _ < 20; _++) {
+        const newAngle = angleFromThreePoints(negOne, q, ONE);
+        expect(newAngle).toBeLessThanOrEqual(angle);
+
+        angle = newAngle;
+        q = toUhpInteriorPoint(0, q.im * 10);
+      }
+    });
+  })
+})
+
 describe("Geodesic between two points", () => {
   it("throws error with a negative tolerance", () => {
     const z = toUhpPoint(1, 1);
     const w = toUhpPoint(2, 2);
     const negTolerance = -1e3 * Math.random();
 
-    expect(() => geodesicBetweenPoints(z, w, negTolerance)).toThrow(
+    expect(() => geodesicThroughPoints(z, w, negTolerance)).toThrow(
       "Tolerance needs to be positive"
     );
   });
@@ -201,7 +389,7 @@ describe("Geodesic between two points", () => {
   it("throws error when the points are the same", () => {
     const z = randomUhpInteriorPoint();
 
-    expect(() => geodesicBetweenPoints(z, z)).toThrow(
+    expect(() => geodesicThroughPoints(z, z)).toThrow(
       "Input points must be distinct"
     );
   });
@@ -216,7 +404,7 @@ describe("Geodesic between two points", () => {
       { re: Math.sqrt(2), im: 0 },
     ];
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
+    const { isVertical, center, radius, points } = geodesicThroughPoints(z, w);
 
     expect(isVertical).toBe(false);
     expect(center.re).toBe(0);
@@ -241,7 +429,7 @@ describe("Geodesic between two points", () => {
       { re: 2 + Math.sqrt(5), im: 0 },
     ];
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(I, z);
+    const { isVertical, center, radius, points } = geodesicThroughPoints(I, z);
 
     expect(isVertical).toBe(false);
     expect(center.re).toBe(2);
@@ -262,7 +450,7 @@ describe("Geodesic between two points", () => {
     const w = toUhpPoint(z.re, z.im + 1);
     const expectedPoints = [{ re: z.re, im: 0 }, z, w, UhpINFINITY];
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
+    const { isVertical, center, radius, points } = geodesicThroughPoints(z, w);
 
     expect(isVertical).toBe(true);
     expect(center.re).toBe(Infinity);
@@ -287,7 +475,7 @@ describe("Geodesic between two points", () => {
       UhpINFINITY,
     ];
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(
+    const { isVertical, center, radius, points } = geodesicThroughPoints(
       z,
       UhpINFINITY
     );
@@ -315,7 +503,7 @@ describe("Geodesic between two points", () => {
       UhpINFINITY,
     ];
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(
+    const { isVertical, center, radius, points } = geodesicThroughPoints(
       z,
       UhpINFINITY
     );
@@ -357,7 +545,7 @@ describe("Geodesic between two points", () => {
       expectedPoints.push(oneQuarter, threeQuarter, w);
     }
 
-    const { isVertical, center, radius, points } = geodesicBetweenPoints(z, w);
+    const { isVertical, center, radius, points } = geodesicThroughPoints(z, w);
 
     expect(isVertical).toBe(false);
     expect(center.re).toBe(expectedCenter.re);
@@ -377,8 +565,8 @@ describe("Geodesic between two points", () => {
     const z = randomUhpInteriorPoint();
     const w = randomUhpInteriorPoint();
 
-    const zwGeodesic = geodesicBetweenPoints(z, w);
-    const wzGeodesic = geodesicBetweenPoints(w, z);
+    const zwGeodesic = geodesicThroughPoints(z, w);
+    const wzGeodesic = geodesicThroughPoints(w, z);
 
     expect(zwGeodesic.isVertical).toBe(wzGeodesic.isVertical);
     expect(zwGeodesic.center.re).toBeCloseTo(wzGeodesic.center.re);
@@ -551,7 +739,7 @@ describe("Horocycle given base and boundary points", () => {
     const twoI = toUhpInteriorPoint(0, 2);
 
     const { center, basePoint, bdryPoint, eucRadius } =
-      horocycleGivenBaseAndBdry(ZERO, twoI);
+      horocycleGivenBaseAndOnHor(ZERO, twoI);
 
     expect(center).toEqual(I);
     expect(basePoint).toEqual(ZERO);
@@ -565,7 +753,7 @@ describe("Horocycle given base and boundary points", () => {
     const expectedCenter = toUhpInteriorPoint(0, randScale);
 
     const { center, basePoint, bdryPoint, eucRadius } =
-      horocycleGivenBaseAndBdry(ZERO, randBdry);
+      horocycleGivenBaseAndOnHor(ZERO, randBdry);
 
     expect(center).toEqual(expectedCenter);
     expect(basePoint).toEqual(ZERO);
@@ -575,7 +763,7 @@ describe("Horocycle given base and boundary points", () => {
 
   it("base point at infinity, boundary point at i", () => {
     const { center, basePoint, bdryPoint, eucRadius } =
-      horocycleGivenBaseAndBdry(UhpINFINITY, I);
+      horocycleGivenBaseAndOnHor(UhpINFINITY, I);
 
     expect(center).toEqual(UhpINFINITY);
     expect(basePoint).toEqual(UhpINFINITY);
@@ -587,7 +775,7 @@ describe("Horocycle given base and boundary points", () => {
     const randBdry = randomUhpInteriorPoint();
 
     const { center, basePoint, bdryPoint, eucRadius } =
-      horocycleGivenBaseAndBdry(UhpINFINITY, randBdry);
+      horocycleGivenBaseAndOnHor(UhpINFINITY, randBdry);
 
     expect(center).toEqual(UhpINFINITY);
     expect(basePoint).toEqual(UhpINFINITY);

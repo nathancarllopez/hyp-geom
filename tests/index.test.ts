@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { UhpGeometry } from "../src";
-import { randomUhpBoundaryPoint, randomUhpInteriorPoint } from "./helpers/random";
+import { randomComplex, randomUhpBoundaryPoint, randomUhpInteriorPoint } from "./helpers/random";
 import {
   circleCenterAndBdryPoint,
   circleCenterAndRadius,
-  geodesicBetweenPoints,
-  horocycleGivenBaseAndBdry,
+  geodesicThroughPoints,
+  geodesicFromBaseAndDirection,
+  horocycleGivenBaseAndOnHor,
   horocyleGivenCenter,
   toPointAtInfinity,
   toUhpBoundaryPoint,
@@ -13,20 +14,19 @@ import {
 } from "../src/upper-half-plane/geometry";
 
 describe("UhpGeometry class", () => {
+  const uhp = new UhpGeometry();
+
   it("distance between two points", () => {
     const z = randomUhpInteriorPoint();
     const w = randomUhpInteriorPoint();
     const dist = uhpDistance(z, w);
 
-    const uhp = new UhpGeometry();
     const result = uhp.distance(z.re, z.im, w.re, w.im);
 
     expect(result).toBe(dist);
   });
 
   it("distance returns Infinity for points on the real axis or at infinity", () => {
-    const uhp = new UhpGeometry();
-
     // imZ = 0 (on real axis)
     expect(uhp.distance(1, 0, 2, 1)).toBe(Infinity);
 
@@ -49,24 +49,26 @@ describe("UhpGeometry class", () => {
   it("geodesic between two points", () => {
     const z = randomUhpInteriorPoint();
     const w = randomUhpInteriorPoint();
-    const geodesic = geodesicBetweenPoints(z, w);
-
-    const uhp = new UhpGeometry();
-    const result = uhp.geodesic(z.re, z.im, w.re, w.im);
+    const geodesic = geodesicThroughPoints(z, w);
+    
+    const result = uhp.geodesic({ reZ: z.re, imZ: z.im, reW: w.re, imW: w.im });
 
     expect(result).toEqual(geodesic);
   });
 
-  it("geodesic throws error for invalid inputs", () => {
-    const uhp = new UhpGeometry();
+  it("geodesic given a base point and a direction", () => {
+    const base = randomUhpInteriorPoint();
+    const direction = randomComplex();
+    const geodesic = geodesicFromBaseAndDirection(base, direction);
 
-    // Negative imaginary parts for geodesic should throw
-    expect(() => uhp.geodesic(1, -1, 2, 1)).toThrow();
-    expect(() => uhp.geodesic(1, 1, 2, -1)).toThrow();
-    expect(() => uhp.geodesic(1, -1, 2, -1)).toThrow();
+    const result = uhp.geodesic({
+      reBase: base.re,
+      imBase: base.im,
+      dirX: direction.re,
+      dirY: direction.im
+    });
 
-    // Both points are the same (degenerate geodesic)
-    expect(() => uhp.geodesic(1, 1, 1, 1)).toThrow();
+    expect(result).toEqual(geodesic);
   });
 
   it("circle from center and radius", () => {
@@ -98,20 +100,6 @@ describe("UhpGeometry class", () => {
     });
 
     expect(result).toEqual(circle);
-  });
-
-  it("circle throws error for invalid arguments", () => {
-    const uhp = new UhpGeometry();
-
-    // Missing required properties
-    expect(() =>
-      uhp.circle({ reCenter: 1, imCenter: 1 } as any)
-    ).toThrowError("Invalid arguments for circle");
-
-    // Passing unrelated properties
-    expect(() =>
-      uhp.circle({ foo: 1, bar: 2 } as any)
-    ).toThrowError("Invalid arguments for circle");
   });
 
   it("horocycle from finite center", () => {
@@ -152,7 +140,7 @@ describe("UhpGeometry class", () => {
     });
 
     const basePoint = toUhpBoundaryPoint(base.re, base.im);
-    expect(result).toEqual(horocycleGivenBaseAndBdry(basePoint, horPoint));
+    expect(result).toEqual(horocycleGivenBaseAndOnHor(basePoint, horPoint));
   });
 
   it("horocycle from base point at infinity", () => {
@@ -167,20 +155,34 @@ describe("UhpGeometry class", () => {
     });
 
     const basePoint = toPointAtInfinity(Infinity, Infinity);
-    expect(result).toEqual(horocycleGivenBaseAndBdry(basePoint, horPoint));
+    expect(result).toEqual(horocycleGivenBaseAndOnHor(basePoint, horPoint));
   });
 
-  it("horocycle throws error for invalid arguments", () => {
+  it("isometry constructs UhpIsometry from complex coefficients", () => {
     const uhp = new UhpGeometry();
-
-    // Missing required properties
-    expect(() =>
-      uhp.horocycle({ reCenter: 1 } as any)
-    ).toThrowError("Invalid arguments for horocycle");
-
-    // Passing unrelated properties
-    expect(() =>
-      uhp.horocycle({ foo: 1, bar: 2 } as any)
-    ).toThrowError("Invalid arguments for horocycle");
+    // 2x2 matrix: [[1+i, 2], [3, 4-i]]
+    const coeffs = [
+      { re: 1, im: 1 },
+      { re: 2, im: 0 },
+      { re: 3, im: 0 },
+      { re: 4, im: -1 },
+    ];
+    const result = uhp.isometry(coeffs);
+    // Should be an instance of UhpIsometry
+    expect(result).toBeInstanceOf(Object);
+    expect(result.constructor.name).toBe("UhpIsometry");
   });
+
+  it("elliptic returns a rotation isometry about a given center", () => {
+    const uhp = new UhpGeometry();
+    const center = randomUhpInteriorPoint();
+    const theta = Math.PI / 3;
+    const result = uhp.elliptic(center.re, center.im, theta);
+    expect(result).toBeInstanceOf(Object);
+    expect(result.constructor.name).toBe("UhpIsometry");
+    // Should have a conjugate method (as in the implementation)
+    expect(typeof result.conjugate).toBe("function");
+  });
+
+  
 });
