@@ -1,8 +1,7 @@
 import { toComplex } from "../../src/general-math/complex-numbers";
-import { toMobius } from "../../src/general-math/mobius-transformations";
+import { MobiusTransformation } from "../../src/general-math/mobius-transformations";
 import {
   ComplexNumber,
-  MobiusTransformation,
   UhpBoundaryPoint,
   UhpInteriorPoint,
 } from "../../src/types-validators/types";
@@ -40,6 +39,7 @@ export const randomNonZeroComplex = (
 
 export const randomMobius = (
   upperBound: number = 1e5,
+  doReduce: boolean = false
 ): MobiusTransformation => {
   const a = randomComplex(upperBound);
   const b = randomComplex(upperBound);
@@ -51,7 +51,9 @@ export const randomMobius = (
     d = randomComplex(upperBound);
   } while (c.re === 0 && c.im === 0 && d.re === 0 && d.im === 0);
 
-  return toMobius(a, b, c, d);
+  const result = new MobiusTransformation(a, b, c, d)
+  if (doReduce) return result.reduce();
+  return result;
 };
 
 export const randomUhpBoundaryPoint = (
