@@ -1,45 +1,51 @@
-import { MobiusTransformation } from "./classes/mobius-transformation";
-import { ONE, toComplex, ZERO } from "./general-math/complex-numbers";
+import { toComplex } from "./general-math/complex-numbers";
+import { UhpCircle, UhpGeodesic, UhpHorocycle, UhpPolygon } from "./types-validators/types";
 import {
-  ComplexNumber,
-  PointAtInfinity,
-  UhpCircle,
-  UhpGeodesic,
-  UhpHorocycle,
-  UhpInteriorPoint,
-  UhpPoint,
-} from "./types-validators/types";
-import { isPointAtInfinity } from "./types-validators/validators";
+  isPointArray,
+  isPointAtInfinity,
+  isPositiveNumber,
+  isUhpBoundaryPoint,
+  isUhpInteriorPoint,
+} from "./types-validators/validators";
 import {
   circleCenterAndBdryPoint,
   circleCenterAndRadius,
-  geodesicBetweenPoints,
-  geodesicFromBaseInDirection,
-  horocycleGivenBaseAndBdry,
+  geodesicThroughPoints,
+  geodesicFromBaseAndDirection,
+  horocycleGivenBaseAndOnHor,
   horocyleGivenCenter,
-  I,
-  toPointAtInfinity,
-  toUhpBoundaryPoint,
   toUhpInteriorPoint,
   toUhpPoint,
   uhpDistance,
+  polygonFromVertices,
 } from "./upper-half-plane/geometry";
+import { UhpIsometry } from "./upper-half-plane/isometries";
 
 export class UhpGeometry {
-  /**
-   * Computes the hyperbolic distance between two points in the upper half-plane.
-   *
-   * Returns `Infinity` if either point is on the real axis or at infinity (i.e., either the real or imaginary part is `Infinity`).
-   * Throws an error if either imaginary part is negative.
-   *
-   * @param reZ - The real part of the first point.
-   * @param imZ - The imaginary part of the first point.
-   * @param reW - The real part of the second point.
-   * @param imW - The imaginary part of the second point.
-   * @returns The hyperbolic distance between the two points, or `Infinity` if the points are invalid.
-   * @throws {Error} If either imaginary part is negative.
-   */
-  distance(reZ: number, imZ: number, reW: number, imW: number): number {
+  public _tolerance: number;
+
+  constructor(tolerance = 1e-4) {
+    if (!isPositiveNumber(tolerance)) {
+      throw new Error("Tolerance must be positive")
+    }
+    this._tolerance = tolerance;
+  }
+
+  get tolerance() {
+    return this._tolerance;
+  }
+
+  set tolerance(newTolerance: number) {
+    if (!isPositiveNumber(newTolerance)) {
+      throw new Error("Tolerance must be positive")
+    }
+    this._tolerance = newTolerance;
+  }
+
+  distance(z: [number, number], w: [number, number]): number {
+    const [reZ, imZ] = z;
+    const [reW, imW] = w;
+
     if (imZ < 0 || imW < 0) {
       throw new Error("Imaginary parts cannot be negative");
     }
@@ -56,227 +62,232 @@ export class UhpGeometry {
     )
       return Infinity;
 
-    const z = toUhpPoint(reZ, imZ);
-    const w = toUhpPoint(reW, imW);
-
-    return uhpDistance(z, w);
+    return uhpDistance(toUhpPoint(reZ, imZ), toUhpPoint(reW, imW));
   }
 
+  geodesic(z: [number, number], w: [number, number]): UhpGeodesic;
+  geodesic(base: [number, number], dir: { x: number; y: number }): UhpGeodesic;
   geodesic(
-    args:
-      | { reZ: number, imZ: number, reW: number, imW: number }
-      | { reBase: number, imBase: number, dirX: number, dirY: number }
+    arg1: [number, number],
+    arg2: [number, number] | { x: number; y: number }
   ): UhpGeodesic {
-    if ("reZ" in args && "imZ" in args && "reW" in args && "imW" in args) {
-      const { reZ, imZ, reW, imW } = args;
+    const uhp1 = toUhpPoint(arg1[0], arg1[1]);
 
-      const z = toUhpPoint(reZ, imZ);
-      const w = toUhpPoint(reW, imW);
-
-      return geodesicBetweenPoints(z, w);
+    if (isPointArray(arg2)) {
+      const uhp2 = toUhpPoint(arg2[0], arg2[1]);
+      return geodesicThroughPoints(uhp1, uhp2, this.tolerance);
     }
 
-    if ("reBase" in args && "imBase" in args && "dirX" in args && "dirY" in args) {
-      const { reBase, imBase, dirX, dirY } = args;
-
-      const base = toUhpInteriorPoint(reBase, imBase);
-      const direction = toComplex(dirX, dirY);
-
-      return geodesicFromBaseInDirection(base, direction);
+    if (isPointAtInfinity(uhp1)) {
+      throw new Error("Base cannot be infinite");
     }
 
-    throw new Error("Invalid arguments for geodesic");
+    const complexDir = toComplex(arg2.x, arg2.y);
+    return geodesicFromBaseAndDirection(uhp1, complexDir);
   }
 
-  /**
-   * Constructs a circle in the upper half-plane model.
-   *
-   * The circle can be specified either by its center and radius, or by its center and a boundary point.
-   *
-   * @param args - An object specifying either:
-   *   - `reCenter`, `imCenter`, and `radius` for center and radius, or
-   *   - `reCenter`, `imCenter`, `reBdryPoint`, and `imBdryPoint` for center and a boundary point.
-   * @returns The constructed circle as a {@link UhpCircle}.
-   * @throws {Error} If the arguments do not match the expected format.
-   */
-  circle(
-    args:
-      | { reCenter: number; imCenter: number; radius: number }
-      | {
-          reCenter: number;
-          imCenter: number;
-          reBdryPoint: number;
-          imBdryPoint: number;
-        }
-  ): UhpCircle {
-    if ("radius" in args) {
+  circle(center: [number, number], radius: number): UhpCircle;
+  circle(center: [number, number], bdryPoint: [number, number]): UhpCircle;
+  circle(center: [number, number], args: number | [number, number]): UhpCircle {
+    const [reCenter, imCenter] = center;
+
+    if (typeof args === "number") {
+      const radius = args;
       return circleCenterAndRadius(
-        toUhpInteriorPoint(args.reCenter, args.imCenter),
-        args.radius
+        toUhpInteriorPoint(reCenter, imCenter),
+        radius
       );
     }
 
-    if ("reBdryPoint" in args && "imBdryPoint" in args) {
+    if (isPointArray(args)) {
+      const [reBdryPoint, imBdryPoint] = args;
       return circleCenterAndBdryPoint(
-        toUhpInteriorPoint(args.reCenter, args.imCenter),
-        toUhpInteriorPoint(args.reBdryPoint, args.imBdryPoint)
+        toUhpInteriorPoint(reCenter, imCenter),
+        toUhpInteriorPoint(reBdryPoint, imBdryPoint)
       );
     }
 
     throw new Error("Invalid arguments for circle");
   }
 
-  /**
-   * Constructs a horocycle in the upper half-plane model.
-   *
-   * The horocycle can be specified either by its center (which may be a finite point or a point at infinity),
-   * or by a base point on the boundary and a point on the horocycle itself.
-   *
-   * @param args - An object specifying either:
-   *   - `reCenter` and `imCenter` for the center of the horocycle, or
-   *   - `reBasePoint`, `imBasePoint`, `reHorPoint`, and `imHorPoint` for a base point and a boundary point.
-   * @returns The constructed horocycle as a {@link UhpHorocycle}.
-   * @throws {Error} If the arguments do not match the expected format.
-   */
-  horocycle(
-    args:
-      | { reCenter: number; imCenter: number }
-      | {
-          reBasePoint: number;
-          imBasePoint: number;
-          reHorPoint: number;
-          imHorPoint: number;
-        }
-  ): UhpHorocycle {
-    if ("reCenter" in args && "imCenter" in args) {
-      const { reCenter, imCenter } = args;
-      const center =
-        reCenter === Infinity || imCenter === Infinity
-          ? toPointAtInfinity(reCenter, imCenter)
-          : toUhpInteriorPoint(reCenter, imCenter);
+  horocycle(center: [number, number]): UhpHorocycle;
+  horocycle(base: [number, number], onHorPoint: [number, number]): UhpHorocycle;
+  horocycle(arg1: [number, number], arg2?: [number, number]): UhpHorocycle {
+    if (arg2 === undefined) {
+      const center = toUhpPoint(arg1[0], arg1[1]);
+
+      if (isUhpBoundaryPoint(center)) {
+        throw new Error("Center of horocycle cannot be infinite");
+      }
+
       return horocyleGivenCenter(center);
     }
 
-    if (
-      "reBasePoint" in args &&
-      "imBasePoint" in args &&
-      "reHorPoint" in args &&
-      "imHorPoint" in args
-    ) {
-      const { reBasePoint, imBasePoint, reHorPoint, imHorPoint } = args;
-      const basePoint =
-        reBasePoint === Infinity || imBasePoint === Infinity
-          ? toPointAtInfinity(reBasePoint, imBasePoint)
-          : toUhpBoundaryPoint(reBasePoint, imBasePoint);
-      return horocycleGivenBaseAndBdry(
-        basePoint,
-        toUhpInteriorPoint(reHorPoint, imHorPoint)
+    const base = toUhpPoint(arg1[0], arg1[1]);
+    const onHorPoint = toUhpInteriorPoint(arg2[0], arg2[1]);
+
+    if (isUhpInteriorPoint(base)) {
+      throw new Error(
+        "Base of horocycle cannot be inside the hyperbolic plane"
       );
     }
 
-    throw new Error("Invalid arguments for horocycle");
+    return horocycleGivenBaseAndOnHor(base, onHorPoint);
   }
 
-  isometry(coeffs: { re: number; im: number }[]): UhpIsometry {
-    const complexCoeffs = coeffs.map(({ re, im }) => toComplex(re, im));
+  polygon(vertices: [number, number][]): UhpPolygon {
+    const uhpVertices = vertices.map(([re, im]) => toUhpPoint(re, im));
+    return polygonFromVertices(uhpVertices, this.tolerance);
+  }
+
+  isometry(coeffs: [number, number][]): UhpIsometry {
+    const complexCoeffs = coeffs.map(([re, im]) => toComplex(re, im));
     return new UhpIsometry(...complexCoeffs);
   }
 
-  elliptic(reCenter: number, imCenter: number, theta: number): UhpIsometry {
-    const center = toUhpInteriorPoint(reCenter, imCenter);
-    const moveCenterToI = UhpIsometry.movePointToI(center);
+  elliptic(center: [number, number], theta: number): UhpIsometry {
+    const uhpCenter = toUhpInteriorPoint(center[0], center[1]);
+    const moveCenterToI = UhpIsometry.moveIntPointToI(uhpCenter);
     return UhpIsometry.ellipticCenterI(theta).conjugate(moveCenterToI);
   }
 
-  hyperbolic(
-    args:
-      | { reZ: number, imZ: number, reW: number, imW: number }
-      | { reBase: number, imBase: number, dirX: number, dirY: number, distance: number }
-      | { reInt: number, imInt: number, reBdry: number, imBdry: number, distance: number }
-      | { reBdry1: number, imBdry1: number, reBdry2: number, imBdry2: number, distance: number }
+  // Private hyperbolic functions for each overload signature below
+  //#region
+  private hyperbolicTwoInteriorPoints(
+    z: [number, number],
+    w: [number, number]
   ): UhpIsometry {
-    if ("reZ" in args && "imZ" in args && "reW" in args && "imW" in args) {
-      throw new Error("Not yet implemented")
+    const uhpZ = toUhpPoint(z[0], z[1]);
+    const uhpW = toUhpPoint(w[0], w[1]);
+
+    if (isPointAtInfinity(uhpZ)) {
+      throw new Error("First point cannot be the point at infinity");
     }
 
-    if (!("distance" in args)) {
-      throw new Error("Invalid arguments for hyperbolic isometry");
+    if (
+      isPointAtInfinity(uhpW) ||
+      isUhpBoundaryPoint(uhpZ) ||
+      isUhpBoundaryPoint(uhpW)
+    ) {
+      throw new Error(
+        "Both inputs need to be inside the hyperbolic plane if no translation distance is provided"
+      );
     }
 
-    if ("reBase" in args && "imBase" in args && "dirX" in args && "dirY" in args) {
-      throw new Error("Not yet implemented")
+    if (uhpZ.re === uhpW.re && uhpZ.im === uhpW.im) {
+      return new UhpIsometry(); // Return the identity if the points coincide
     }
 
-    if ("reInt" in args && "imInt" in args && "reBdry" in args && "imBdry" in args) {
-      throw new Error("Not yet implemented")
-    }
+    const moveToImAxis = UhpIsometry.moveGeodesicToImAxis(uhpZ, uhpW);
+    const distance = Math.log(moveToImAxis.apply(uhpW).im);
 
-    if ("reBdry1" in args && "imBdry1" in args && "reBdry2" in args && "imBdry2" in args) {
-      throw new Error("Not yet implemented")
-    }
-    
-    throw new Error("Invalid arguments for hyperbolic isometry");
-  }
-
-
-}
-
-export class UhpIsometry extends MobiusTransformation {
-  readonly mobius: MobiusTransformation;
-
-  constructor(a = ONE, b = ZERO, c = ZERO, d = ONE) {
-    const mobius = new MobiusTransformation(a, b, c, d);
-    const det = mobius.determinant();
-
-    if (det.re === 0 && det.im === 0) {
-      console.log("transformation:", mobius.coeffs);
-      console.log("determinant:", det);
-      throw new Error("Non-invertible transformation");
-    }
-
-    super(a, b, c, d);
-    this.mobius = mobius;
-  }
-
-  compose(n: UhpIsometry): UhpIsometry {
-    const composition = super.compose(n.mobius);
-    return new UhpIsometry(...composition.coeffs);
-  }
-
-  conjugate(n: UhpIsometry): UhpIsometry {
-    const conj = super.conjugate(n.mobius);
-    return new UhpIsometry(...conj.coeffs);
-  }
-
-  inverse(): UhpIsometry {
-    const mobInverse = super.inverse();
-    return new UhpIsometry(...mobInverse.coeffs);
-  }
-
-  apply(z: UhpPoint): UhpPoint {
-    const w = super.apply(z);
-    return toUhpPoint(w.re, w.im);
-  }
-
-  static movePointToI(z: UhpInteriorPoint | PointAtInfinity): UhpIsometry {
-    if (isPointAtInfinity(z)) {
-      return new UhpIsometry(I, ONE, ONE, ZERO);
-    }
-
-    const moveToImAxis = new UhpIsometry(ONE, toComplex(-z.re, 0), ZERO, ONE);
-    const pointOnImAxis = moveToImAxis.apply(z);
-    const scaleDownToI = new UhpIsometry(
-      toComplex(1 / pointOnImAxis.im, 0),
-      ZERO,
-      ZERO,
-      ONE
+    return UhpIsometry.hyperbolicMovingIVertically(distance).conjugate(
+      moveToImAxis
     );
+  }
+  private hyperbolicTwoPointsAndDistance(
+    z: [number, number],
+    w: [number, number],
+    distance: number
+  ): UhpIsometry {
+    const uhpZ = toUhpPoint(z[0], z[1]);
 
-    return scaleDownToI.compose(moveToImAxis);
+    if (isPointAtInfinity(uhpZ)) {
+      throw new Error("First point cannot be the point at infinity");
+    }
+
+    const uhpW = toUhpPoint(w[0], w[1]);
+
+    if (distance === 0 || (uhpZ.re === uhpW.re && uhpZ.im === uhpW.im)) {
+      return new UhpIsometry(); // Return the identity if the translation distance is zero or the points coincide
+    }
+
+    const moveToImAxis = UhpIsometry.moveGeodesicToImAxis(uhpZ, uhpW);
+
+    return UhpIsometry.hyperbolicMovingIVertically(distance).conjugate(
+      moveToImAxis
+    );
+  }
+  private hyperbolicPointDirectionDistance(
+    base: [number, number],
+    dir: { x: number; y: number },
+    distance: number
+  ): UhpIsometry {
+    const uhpBase = toUhpPoint(base[0], base[1]);
+
+    if (isPointAtInfinity(uhpBase)) {
+      throw new Error("First point cannot be the point at infinity");
+    }
+
+    if (distance === 0 || (dir.x === 0 && dir.y === 0)) {
+      return new UhpIsometry(); // Return the identity if the translation distance is zero or the zero vector is given as the direction
+    }
+
+    const moveToImAxis = UhpIsometry.moveGeodesicToImAxis(uhpBase, dir);
+
+    return UhpIsometry.hyperbolicMovingIVertically(distance).conjugate(
+      moveToImAxis
+    );
+  }
+  private hyperbolicPointDirection(
+    base: [number, number],
+    dir: { x: number; y: number }
+  ): UhpIsometry {
+    const distance = Math.hypot(dir.x, dir.y);
+    return this.hyperbolicPointDirectionDistance(base, dir, distance);
+  }
+  //#endregion
+
+  hyperbolic(z: [number, number], w: [number, number]): UhpIsometry;
+  hyperbolic(
+    z: [number, number],
+    w: [number, number],
+    distance: number
+  ): UhpIsometry;
+  hyperbolic(
+    base: [number, number],
+    dir: { x: number; y: number }
+  ): UhpIsometry;
+  hyperbolic(
+    base: [number, number],
+    dir: { x: number; y: number },
+    distance: number
+  ): UhpIsometry;
+  hyperbolic(
+    arg1: [number, number],
+    arg2: [number, number] | { x: number; y: number },
+    arg3?: number
+  ): UhpIsometry {
+    if (isPointArray(arg2)) {
+      if (arg3 === undefined) {
+        // Overload 1
+        return this.hyperbolicTwoInteriorPoints(arg1, arg2);
+      }
+
+      // Overload 2
+      return this.hyperbolicTwoPointsAndDistance(arg1, arg2, arg3);
+    }
+
+    if (arg3 === undefined) {
+      // Overload 3
+      return this.hyperbolicPointDirection(arg1, arg2);
+    }
+
+    // Overload 4
+    return this.hyperbolicPointDirectionDistance(arg1, arg2, arg3);
   }
 
-  static ellipticCenterI(theta: number): UhpIsometry {
-    const conj = super.unitCircleRotation(theta).conjugateByCayley();
-    return new UhpIsometry(...conj.coeffs);
+  parabolic(bdry: [number, number], distance: number): UhpIsometry {
+    const bdryPoint = toUhpPoint(bdry[0], bdry[1]);
+
+    if (isUhpInteriorPoint(bdryPoint)) {
+      throw new Error("Boundary point cannot be inside the hyperbolic plane");
+    }
+
+    const moveBdryToInfinity = UhpIsometry.movePointToInfinity(bdryPoint);
+
+    return UhpIsometry.parabolicAtInfinity(distance).conjugate(
+      moveBdryToInfinity
+    );
   }
 }
