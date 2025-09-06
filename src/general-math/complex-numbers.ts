@@ -9,12 +9,21 @@ export const toComplex = (re: number, im: number): ComplexNumber => ({
   im,
 });
 
+export const isEqualTo = (
+  z: ComplexNumber,
+  w: ComplexNumber,
+  tolerance: number = 1e-4
+): boolean =>
+  Math.abs(w.re - z.re) < tolerance && Math.abs(w.im - z.im) < tolerance;
+
 export const scale = (z: ComplexNumber, lambda: number): ComplexNumber => ({
   re: lambda * z.re,
   im: lambda * z.im,
 });
 
 export const modulus = (z: ComplexNumber): number => Math.hypot(z.re, z.im);
+
+export const argument = (z: ComplexNumber): number => Math.atan2(z.im, z.re);
 
 export const conjugate = (z: ComplexNumber): ComplexNumber => ({
   re: z.re,
@@ -28,14 +37,14 @@ export const add = (z: ComplexNumber, w: ComplexNumber): ComplexNumber => ({
 
 export const multiply = (
   z: ComplexNumber,
-  w: ComplexNumber,
+  w: ComplexNumber
 ): ComplexNumber => ({
   re: z.re * w.re - z.im * w.im,
   im: z.re * w.im + z.im * w.re,
 });
 
 export const inverse = (z: ComplexNumber): ComplexNumber => {
-  if (z.re === 0 && z.im === 0) {
+  if (isEqualTo(z, ZERO)) {
     throw new Error("Zero has no inverse.");
   }
 
@@ -46,7 +55,7 @@ export const inverse = (z: ComplexNumber): ComplexNumber => {
 };
 
 export const divide = (z: ComplexNumber, w: ComplexNumber): ComplexNumber => {
-  if (w.re === 0 && w.im === 0) {
+  if (isEqualTo(w, ZERO)) {
     throw new Error("Cannot divide by zero.");
   }
 
@@ -61,3 +70,17 @@ export const eucDistance = (z: ComplexNumber, w: ComplexNumber): number =>
 
 export const pointOnUnitCircle = (theta: number): ComplexNumber =>
   toComplex(Math.cos(theta), Math.sin(theta));
+
+export const angleBetween = (z: ComplexNumber, w: ComplexNumber) => Math.abs(argument(z) - argument(w));
+
+export const nthRoot = (z: ComplexNumber, n: number = 2): ComplexNumber => {
+  if (n === 0) return ONE;
+
+  const rootModulus = Math.pow(modulus(z), 1 / n);
+  const rootArg = argument(z) / n;
+
+  return toComplex(
+    rootModulus * Math.cos(rootArg),
+    rootModulus * Math.sin(rootArg)
+  );
+};
