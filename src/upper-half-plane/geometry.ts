@@ -46,7 +46,7 @@ export const toUhpRealLine = (re: number, im: number): UhpRealLine => {
   if (isOnRealLine(z)) return z;
   if (!Number.isFinite(re)) throw new Error("Real part must be finite");
   throw new Error("Imaginary part must be zero");
-}
+};
 
 export const toUhpInteriorPoint = (
   re: number,
@@ -59,13 +59,16 @@ export const toUhpInteriorPoint = (
   throw new Error("Imaginary part must be positive");
 };
 
-export const toUhpBoundaryPoint = (re: number, im: number): UhpBoundaryPoint => {
+export const toUhpBoundaryPoint = (
+  re: number,
+  im: number
+): UhpBoundaryPoint => {
   const z = toComplex(re, im);
   if (isPointAtInfinity(z) || isOnRealLine(z)) return z;
   throw new Error(
     "Invalid Uhp boundary point. Must be of the form (Infinity, Infinity) or (Finite, 0)"
   );
-}
+};
 
 // export const toUhpBoundaryPoint = (
 //   re: number,
@@ -79,8 +82,7 @@ export const toUhpBoundaryPoint = (re: number, im: number): UhpBoundaryPoint => 
 
 export const toUhpPoint = (re: number, im: number): UhpPoint => {
   const z = toComplex(re, im);
-  if (isUhpBoundaryPoint(z) || isUhpInteriorPoint(z))
-    return z;
+  if (isUhpBoundaryPoint(z) || isUhpInteriorPoint(z)) return z;
   throw new Error(
     "Invalid Uhp point. Must be one of the following forms (Infinity, Infinity); (Finite, 0); (Finite, Finite and positive)"
   );
@@ -102,10 +104,7 @@ export const NEGONE: UhpBoundaryPoint = { re: -1, im: 0 };
 // Distance formula
 //#region
 export const uhpDistance = (z: UhpPoint, w: UhpPoint): number => {
-  if (
-    isUhpBoundaryPoint(z) ||
-    isUhpBoundaryPoint(w)
-  ) {
+  if (isUhpBoundaryPoint(z) || isUhpBoundaryPoint(w)) {
     return Infinity;
   }
 
@@ -116,7 +115,11 @@ export const uhpDistance = (z: UhpPoint, w: UhpPoint): number => {
 // Angles
 //#region
 // "position" here refers to the angle of point on the parameterization of a non-vertical geodesic: (radius * cos(t) + center.re, radius * sin(t))
-export const positionOnGeodesic = (z: UhpPoint, geod: UhpGeodesic, tolerance: number = TOLERANCE): number => {
+export const positionOnGeodesic = (
+  z: UhpPoint,
+  geod: UhpGeodesic,
+  tolerance: number = TOLERANCE
+): number => {
   const { isVertical, center, radius } = geod;
 
   if (isVertical) {
