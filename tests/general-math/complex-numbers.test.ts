@@ -1,520 +1,193 @@
-// import { describe, expect, it } from "vitest";
-// import {
-//   scale,
-//   add,
-//   toComplex,
-//   modulus,
-//   multiply,
-//   conjugate,
-//   inverse,
-//   divide,
-//   ZERO,
-//   I,
-//   ONE,
-// } from "../../src/general-math/complex-numbers-old";
-// import { randomComplex, randomNonZeroComplex } from "../helpers/random";
-
-// describe("Modulus of a complex number", () => {
-//   it("Basic modulus", () => {
-//     const z = toComplex(1, 2);
-//     const result = modulus(z);
-
-//     expect(result).toBe(Math.sqrt(5));
-//   });
-
-//   it("modulus of zero is zero", () => {
-//     const result = modulus(ZERO);
-
-//     expect(result).toBe(0);
-//   });
-
-//   it("modulus of purely real number is absolute value", () => {
-//     const z = toComplex(-7, 0);
-//     const result = modulus(z);
-
-//     expect(result).toBe(7);
-//   });
-
-//   it("modulus of purely imaginary number is absolute value", () => {
-//     const z = toComplex(0, -5);
-//     const result = modulus(z);
-
-//     expect(result).toBe(5);
-//   });
-
-//   it("modulus is always non-negative", () => {
-//     for (let i = 0; i < 10; i++) {
-//       const z = randomComplex();
-
-//       expect(modulus(z)).toBeGreaterThanOrEqual(0);
-//     }
-//   });
-
-//   it("modulus of conjugate equals modulus", () => {
-//     const z = randomComplex();
-//     const conj = conjugate(z);
-
-//     expect(modulus(z)).toBeCloseTo(modulus(conj));
-//   });
-
-//   it("modulus of product equals product of moduli", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-
-//     const modProduct = modulus(multiply(z, w));
-//     const productOfMods = modulus(z) * modulus(w);
-
-//     expect(modProduct).toBeCloseTo(productOfMods, 1);
-//   });
-// });
-
-// describe("Scaling complex numbers", () => {
-//   it("scaling by 1 yields the same number", () => {
-//     const z = randomComplex();
-//     const result = scale(z, 1);
-
-//     expect(result.re).toBeCloseTo(z.re);
-//     expect(result.im).toBeCloseTo(z.im);
-//   });
-
-//   it("scaling by 0 yields zero", () => {
-//     const z = randomComplex();
-//     const result = scale(z, 0);
-
-//     expect(result.re).toBeCloseTo(0);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("scaling by a positive real number", () => {
-//     const z = toComplex(2, -3);
-//     const lambda = 4;
-//     const result = scale(z, lambda);
-
-//     expect(result.re).toBeCloseTo(8);
-//     expect(result.im).toBeCloseTo(-12);
-//   });
-
-//   it("scaling by a negative real number", () => {
-//     const z = toComplex(1, 5);
-//     const lambda = -2;
-//     const result = scale(z, lambda);
-
-//     expect(result.re).toBeCloseTo(-2);
-//     expect(result.im).toBeCloseTo(-10);
-//   });
-
-//   it("scaling zero yields zero", () => {
-//     const z = toComplex(0, 0);
-//     const result = scale(z, 5);
-
-//     expect(result.re).toBe(0);
-//     expect(result.im).toBe(0);
-//   });
-
-//   it("scaling is distributive over addition", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-//     const lambda = Math.random() * 10 - 5;
-
-//     const left = scale(add(z, w), lambda);
-//     const right = add(scale(z, lambda), scale(w, lambda));
-
-//     expect(left.re).toBeCloseTo(right.re);
-//     expect(left.im).toBeCloseTo(right.im);
-//   });
-
-//   it("scaling is associative", () => {
-//     const z = randomComplex();
-//     const a = Math.random() * 10 - 5;
-//     const b = Math.random() * 10 - 5;
-
-//     const left = scale(scale(z, a), b);
-//     const right = scale(z, a * b);
-
-//     expect(left.re).toBeCloseTo(right.re);
-//     expect(left.im).toBeCloseTo(right.im);
-//   });
-// });
-
-// describe("Conjugate of a complex number", () => {
-//   it("Basic conjugate", () => {
-//     const z = toComplex(2, 8);
-//     const result = conjugate(z);
-
-//     expect(result.re).toBe(2);
-//     expect(result.im).toBe(-8);
-//   });
-
-//   it("conjugate of purely real number is itself", () => {
-//     const z = toComplex(5, 0);
-//     const result = conjugate(z);
-
-//     expect(result.re).toBe(5);
-//     expect(result.im).toBe(0);
-//   });
-
-//   it("conjugate of purely imaginary number negates imaginary part", () => {
-//     const z = toComplex(0, 7);
-//     const result = conjugate(z);
-
-//     expect(result.re).toBe(0);
-//     expect(result.im).toBe(-7);
-//   });
-
-//   it("conjugate of zero is zero", () => {
-//     const result = conjugate(ZERO);
-
-//     expect(result.re).toBe(0);
-//     expect(result.im).toBe(0);
-//   });
-
-//   it("conjugate of conjugate returns original", () => {
-//     const z = randomComplex();
-//     const conj = conjugate(z);
-//     const conjConj = conjugate(conj);
-
-//     expect(conjConj.re).toBeCloseTo(z.re);
-//     expect(conjConj.im).toBeCloseTo(z.im);
-//   });
-
-//   it("conjugate distributes over addition", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-
-//     const conjSum = conjugate(add(z, w));
-//     const sumConj = add(conjugate(z), conjugate(w));
-
-//     expect(conjSum.re).toBeCloseTo(sumConj.re);
-//     expect(conjSum.im).toBeCloseTo(sumConj.im);
-//   });
-
-//   it("conjugate distributes over multiplication", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-
-//     const conjProduct = conjugate(multiply(z, w));
-//     const productConj = multiply(conjugate(z), conjugate(w));
-
-//     expect(conjProduct.re).toBeCloseTo(productConj.re);
-//     expect(conjProduct.im).toBeCloseTo(productConj.im);
-//   });
-
-//   it("conjugate negates only the imaginary part", () => {
-//     const z = randomComplex();
-//     const result = conjugate(z);
-
-//     expect(result.re).toBe(z.re);
-//     expect(result.im).toBe(-z.im);
-//   });
-// });
-
-// describe("Adding complex numbers", () => {
-//   it("basic addition", () => {
-//     const z = toComplex(1, 2);
-//     const w = toComplex(3, 4);
-//     const result = add(z, w);
-
-//     expect(result.re).toBe(4);
-//     expect(result.im).toBe(6);
-//   });
-
-//   it("random addition", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-//     const result = add(z, w);
-
-//     expect(result.re).toBeCloseTo(z.re + w.re);
-//     expect(result.im).toBeCloseTo(z.im + w.im);
-//   });
-
-//   it("adding zero gives the same result", () => {
-//     const z = randomComplex();
-//     const zero = toComplex(0, 0);
-//     const result = add(z, zero);
-
-//     expect(result.re).toBe(z.re);
-//     expect(result.im).toBe(z.im);
-//   });
-
-//   it("addition is commutative", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-
-//     const result1 = add(z, w);
-//     const result2 = add(w, z);
-
-//     expect(result1.re).toBeCloseTo(result2.re);
-//     expect(result1.im).toBeCloseTo(result2.im);
-//   });
-
-//   it("addition is associative", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-//     const u = randomComplex();
-
-//     const result1 = add(add(z, w), u);
-//     const result2 = add(z, add(w, u));
-
-//     expect(result1.re).toBeCloseTo(result2.re);
-//     expect(result1.im).toBeCloseTo(result2.im);
-//   });
-
-//   it("adding negatives yields zero", () => {
-//     const z = randomComplex();
-//     const negZ = scale(z, -1);
-//     const result = add(z, negZ);
-
-//     expect(result.re).toBeCloseTo(0);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("adding purely real numbers", () => {
-//     const z = toComplex(5, 0);
-//     const w = toComplex(-3, 0);
-
-//     const result = add(z, w);
-
-//     expect(result.re).toBe(2);
-//     expect(result.im).toBe(0);
-//   });
-
-//   it("adding purely imaginary numbers", () => {
-//     const z = toComplex(0, 7);
-//     const w = toComplex(0, -2);
-
-//     const result = add(z, w);
-
-//     expect(result.re).toBe(0);
-//     expect(result.im).toBe(5);
-//   });
-// });
-
-// describe("Multiplying complex numbers", () => {
-//   it("basic multiplication", () => {
-//     const z = toComplex(1, 2);
-//     const w = toComplex(3, 4);
-//     const result = multiply(z, w);
-
-//     expect(result.re).toBe(-5);
-//     expect(result.im).toBe(10);
-//   });
-
-//   it("multiplying i by itself gives negative one", () => {
-//     const result = multiply(I, I);
-
-//     expect(result.re).toBe(-1);
-//     expect(result.im).toBe(0);
-//   });
-
-//   it("multiplying by zero yields zero", () => {
-//     const z = randomComplex();
-
-//     const result = multiply(z, ZERO);
-
-//     expect(result.re).toBeCloseTo(0);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("multiplying by one yields the same number", () => {
-//     const z = randomComplex();
-//     const result = multiply(z, ONE);
-
-//     expect(result.re).toBeCloseTo(z.re);
-//     expect(result.im).toBeCloseTo(z.im);
-//   });
-
-//   it("multiplying by i rotates by 90 degrees", () => {
-//     const z = toComplex(2, 3);
-//     const result = multiply(z, I);
-
-//     expect(result.re).toBeCloseTo(-3);
-//     expect(result.im).toBeCloseTo(2);
-//   });
-
-//   it("multiplication is commutative", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-
-//     const result1 = multiply(z, w);
-//     const result2 = multiply(w, z);
-
-//     expect(result1.re).toBeCloseTo(result2.re);
-//     expect(result1.im).toBeCloseTo(result2.im);
-//   });
-
-//   it("multiplication is distributive over addition", () => {
-//     const z = randomComplex();
-//     const w = randomComplex();
-//     const u = randomComplex();
-
-//     const left = multiply(z, add(w, u));
-//     const right = add(multiply(z, w), multiply(z, u));
-
-//     expect(left.re).toBeCloseTo(right.re);
-//     expect(left.im).toBeCloseTo(right.im);
-//   });
-
-//   it("multiplying conjugates yields modulus squared", () => {
-//     const z = randomComplex();
-//     const modSqrd = modulus(z) ** 2;
-//     const result = multiply(z, conjugate(z));
-
-//     expect(result.im).toBeCloseTo(0);
-//     expect(result.re).toBeCloseTo(modSqrd);
-//   });
-
-//   it("multiplying purely imaginary numbers", () => {
-//     const z = toComplex(0, 2);
-//     const w = toComplex(0, 3);
-//     const result = multiply(z, w);
-
-//     expect(result.re).toBeCloseTo(-6);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-// });
-
-// describe("Inverse of complex numbers", () => {
-//   it("inverse of 1 + 0i is 1 - 0i", () => {
-//     const inv = inverse(ONE);
-
-//     expect(inv.re).toBeCloseTo(1);
-//     expect(inv.im).toBeCloseTo(0);
-//   });
-
-//   it("inverse of 0 + 1i is 0 - 1i", () => {
-//     const inv = inverse(I);
-
-//     expect(inv.re).toBeCloseTo(0);
-//     expect(inv.im).toBeCloseTo(-1);
-//   });
-
-//   it("inverse of purely real number", () => {
-//     const z = toComplex(2, 0);
-//     const inv = inverse(z);
-
-//     expect(inv.re).toBeCloseTo(0.5);
-//     expect(inv.im).toBeCloseTo(0);
-//   });
-
-//   it("inverse of purely imaginary number", () => {
-//     const z = toComplex(0, 4);
-//     const inv = inverse(z);
-
-//     expect(inv.re).toBeCloseTo(0);
-//     expect(inv.im).toBeCloseTo(-0.25);
-//   });
-
-//   it("inverse of random (non-zero) complex number", () => {
-//     const z = randomNonZeroComplex();
-//     const inv = inverse(z);
-
-//     const prod = multiply(z, inv);
-
-//     expect(prod.re).toBeCloseTo(1);
-//     expect(prod.im).toBeCloseTo(0);
-//   });
-
-//   it("inverse of conjugate is conjugate of inverse", () => {
-//     const z = randomComplex();
-
-//     const invConj = inverse(conjugate(z));
-//     const conjInv = conjugate(inverse(z));
-
-//     expect(invConj.re).toBeCloseTo(conjInv.re);
-//     expect(invConj.im).toBeCloseTo(conjInv.im);
-//   });
-// });
-
-// describe("Division of complex numbers", () => {
-//   it("basic division", () => {
-//     const z = toComplex(4, 2);
-//     const w = toComplex(1, -1);
-//     const result = divide(z, w);
-
-//     expect(result.re).toBeCloseTo(1);
-//     expect(result.im).toBeCloseTo(3);
-//   });
-
-//   it("division by one yields the same number", () => {
-//     const z = randomComplex();
-//     const result = divide(z, ONE);
-
-//     expect(result.re).toBeCloseTo(z.re);
-//     expect(result.im).toBeCloseTo(z.im);
-//   });
-
-//   it("zero divided by any (non-zero) number is zero", () => {
-//     const z = randomNonZeroComplex();
-//     const result = divide(ZERO, z);
-
-//     expect(result.re).toBeCloseTo(0);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("any number divided by itself is one (except zero)", () => {
-//     const z = randomNonZeroComplex();
-//     const result = divide(z, z);
-
-//     expect(result.re).toBeCloseTo(1);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("division of purely real numbers", () => {
-//     const z = toComplex(6, 0);
-//     const w = toComplex(2, 0);
-//     const result = divide(z, w);
-
-//     expect(result.re).toBeCloseTo(3);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("division of purely imaginary numbers", () => {
-//     const z = toComplex(0, 6);
-//     const w = toComplex(0, 2);
-//     const result = divide(z, w);
-
-//     expect(result.re).toBeCloseTo(3);
-//     expect(result.im).toBeCloseTo(0);
-//   });
-
-//   it("division by i rotates by -90 degrees", () => {
-//     const z = toComplex(2, 3);
-//     const i = toComplex(0, 1);
-//     const result = divide(z, i);
-
-//     expect(result.re).toBeCloseTo(3);
-//     expect(result.im).toBeCloseTo(-2);
-//   });
-
-//   it("division result multiplied by divisor returns dividend (except zero)", () => {
-//     const z = randomComplex();
-//     const w = randomNonZeroComplex();
-
-//     const quotient = divide(z, w);
-//     const product = multiply(quotient, w);
-
-//     expect(product.re).toBeCloseTo(z.re);
-//     expect(product.im).toBeCloseTo(z.im);
-//   });
-
-//   it("division result is correct for negative numbers", () => {
-//     const z = toComplex(-4, -2);
-//     const w = toComplex(-1, 1);
-//     const result = divide(z, w);
-
-//     expect(result.re).toBeCloseTo(1);
-//     expect(result.im).toBeCloseTo(3);
-//   });
-
-//   it("division is not commutative", () => {
-//     const z = toComplex(5, 2);
-//     const w = toComplex(1, 3);
-
-//     const result1 = divide(z, w);
-//     const result2 = divide(w, z);
-
-//     // They should not be equal
-//     expect(result1.re).not.toBeCloseTo(result2.re);
-//     expect(result1.im).not.toBeCloseTo(result2.im);
-//   });
-// });
+import { describe, it, expect } from "vitest";
+import { ComplexNumber, getComplexNumbers } from "../../src/general-math/complex-numbers.js";
+import { randomReal } from "../helpers/random.js";
+
+describe("getComplexNumbers factory function", () => {
+  it("returns a set of complex numbers and a factory function for other complex numbers", () => {
+    for (let i = 0; i < 5; i++) {
+      const tolerance = randomReal(1, true);
+      const { constants, factory } = getComplexNumbers(tolerance);
+
+      expect(typeof constants).toBe("object");
+
+      for (const complex of Object.values(constants)) {
+        expect(complex instanceof ComplexNumber).toBeTruthy();
+      }
+
+      for (let i = 0; i < 10; i++) {
+        const re = randomReal();
+        const im = randomReal();
+        const complex = factory(re, im);
+
+        expect(complex instanceof ComplexNumber).toBeTruthy();
+      }
+    }
+  });
+
+  it("throws an error if tolerance is not positive", () => {
+    expect(() => getComplexNumbers(0)).toThrow("The tolerance must be a positive number");
+    expect(() => getComplexNumbers(-1)).toThrow("The tolerance must be a positive number");
+    expect(() => getComplexNumbers(NaN)).toThrow("The tolerance must be a positive number");
+  });
+
+  it("constants have correct values", () => {
+    const { constants } = getComplexNumbers(1e-4);
+    expect(constants.ZERO.re).toBe(0);
+    expect(constants.ZERO.im).toBe(0);
+    expect(constants.ONE.re).toBe(1);
+    expect(constants.ONE.im).toBe(0);
+    expect(constants.NEGONE.re).toBe(-1);
+    expect(constants.NEGONE.im).toBe(0);
+    expect(constants.I.re).toBe(0);
+    expect(constants.I.im).toBe(1);
+    expect(constants.NEGI.re).toBe(0);
+    expect(constants.NEGI.im).toBe(-1);
+    expect(constants.INFINITY.re).toBe(Infinity);
+    expect(constants.INFINITY.im).toBe(Infinity);
+  });
+
+  it("factory creates complex numbers with correct tolerance", () => {
+    const tolerance = 1e-6;
+    const { factory } = getComplexNumbers(tolerance);
+    const c = factory(2, 3);
+    expect(c.re).toBe(2);
+    expect(c.im).toBe(3);
+    expect(c.tolerance).toBe(tolerance);
+  });
+
+  it("constants use the provided tolerance", () => {
+    const tolerance = 1e-7;
+    const { constants } = getComplexNumbers(tolerance);
+    expect(constants.ZERO.tolerance).toBe(tolerance);
+    expect(constants.ONE.tolerance).toBe(tolerance);
+    expect(constants.INFINITY.tolerance).toBe(tolerance);
+  });
+});
+
+describe("ComplexNumber class", () => {
+  describe("constructor", () => {
+    it("creates a complex number with given real and imaginary parts", () => {
+      const c = new ComplexNumber(2, 3, 1e-5);
+      expect(c.re).toBe(2);
+      expect(c.im).toBe(3);
+      expect(c.tolerance).toBe(1e-5);
+    });
+
+    it("defaults tolerance to 1e-4 if not provided", () => {
+      const c = new ComplexNumber(1, 1);
+      expect(c.tolerance).toBe(1e-4);
+    });
+
+    it("throws if tolerance is not positive", () => {
+      expect(() => new ComplexNumber(1, 1, 0)).toThrow();
+      expect(() => new ComplexNumber(1, 1, -1)).toThrow();
+      expect(() => new ComplexNumber(1, 1, NaN)).toThrow();
+    });
+  });
+
+  describe("tolerance getter and setter", () => {
+    it("gets the current tolerance", () => {
+      const c = new ComplexNumber(1, 2, 1e-6);
+      expect(c.tolerance).toBe(1e-6);
+    });
+
+    it("sets a new tolerance", () => {
+      const c = new ComplexNumber(1, 2, 1e-6);
+      c.tolerance = 1e-4;
+      expect(c.tolerance).toBe(1e-4);
+    });
+
+    it("throws if setting tolerance to non-positive value", () => {
+      const c = new ComplexNumber(1, 2, 1e-6);
+      expect(() => { c.tolerance = 0; }).toThrow();
+      expect(() => { c.tolerance = -1; }).toThrow();
+      expect(() => { c.tolerance = NaN; }).toThrow();
+    });
+  });
+
+  describe("add", () => {
+    it("adds two complex numbers", () => {
+      const a = new ComplexNumber(1, 2);
+      const b = new ComplexNumber(3, 4);
+      const result = a.add(b);
+      expect(result.re).toBe(4);
+      expect(result.im).toBe(6);
+    });
+  });
+
+  describe("sub", () => {
+    it("subtracts two complex numbers", () => {
+      const a = new ComplexNumber(5, 7);
+      const b = new ComplexNumber(2, 3);
+      const result = a.sub(b);
+      expect(result.re).toBe(3);
+      expect(result.im).toBe(4);
+    });
+  });
+
+  describe("mul", () => {
+    it("multiplies two complex numbers", () => {
+      const a = new ComplexNumber(2, 3);
+      const b = new ComplexNumber(4, -5);
+      const result = a.mul(b);
+      expect(result.re).toBe(2 * 4 - 3 * -5);
+      expect(result.im).toBe(2 * -5 + 3 * 4);
+    });
+  });
+
+  describe("div", () => {
+    it("divides two complex numbers", () => {
+      const a = new ComplexNumber(7, 5);
+      const b = new ComplexNumber(2, -3);
+      const result = a.div(b);
+      const denom = 2 * 2 + (-3) * (-3);
+      expect(result.re).toBeCloseTo((7 * 2 + 5 * -3) / denom);
+      expect(result.im).toBeCloseTo((5 * 2 - 7 * -3) / denom);
+    });
+
+    it("throws when dividing by zero", () => {
+      const a = new ComplexNumber(1, 1);
+      const b = new ComplexNumber(0, 0);
+      expect(() => a.div(b)).toThrow();
+    });
+  });
+
+  describe("conj", () => {
+    it("returns the complex conjugate", () => {
+      const a = new ComplexNumber(2, 3);
+      const result = a.conj();
+      expect(result.re).toBe(2);
+      expect(result.im).toBe(-3);
+    });
+  });
+
+  describe("abs", () => {
+    it("returns the magnitude", () => {
+      const a = new ComplexNumber(3, 4);
+      expect(a.abs()).toBe(5);
+    });
+  });
+
+  describe("equals", () => {
+    it("returns true for equal complex numbers within tolerance", () => {
+      const a = new ComplexNumber(1, 2, 1e-6);
+      const b = new ComplexNumber(1 + 1e-7, 2 - 1e-7, 1e-6);
+      expect(a.equals(b)).toBe(true);
+    });
+
+    it("returns false for different complex numbers", () => {
+      const a = new ComplexNumber(1, 2);
+      const b = new ComplexNumber(2, 1);
+      expect(a.equals(b)).toBe(false);
+    });
+  });
+
+  describe("toString", () => {
+    it("returns a string representation", () => {
+      const a = new ComplexNumber(2, 3);
+      expect(a.toString()).toMatch(/2.*\+.*3i/);
+      const b = new ComplexNumber(2, -3);
+      expect(b.toString()).toMatch(/2.*-.*3i/);
+    });
+  });
+});
