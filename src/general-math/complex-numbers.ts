@@ -1,86 +1,161 @@
-import { ComplexNumber } from "../types-validators/types";
+import { isPositiveNumber } from "../util";
 
-export const ZERO: ComplexNumber = { re: 0, im: 0 };
-export const ONE: ComplexNumber = { re: 1, im: 0 };
-export const I: ComplexNumber = { re: 0, im: 1 };
+interface ComplexNumberInterface {
+  re: number;
+  im: number;
+  modulus: number;
+  argument: number | null; // Is null when complex number is infinity
+}
 
-export const toComplex = (re: number, im: number): ComplexNumber => ({
-  re,
-  im,
-});
-
-export const isEqualTo = (
-  z: ComplexNumber,
-  w: ComplexNumber,
-  tolerance: number = 1e-4
-): boolean =>
-  Math.abs(w.re - z.re) < tolerance && Math.abs(w.im - z.im) < tolerance;
-
-export const scale = (z: ComplexNumber, lambda: number): ComplexNumber => ({
-  re: lambda * z.re,
-  im: lambda * z.im,
-});
-
-export const modulus = (z: ComplexNumber): number => Math.hypot(z.re, z.im);
-
-export const argument = (z: ComplexNumber): number => Math.atan2(z.im, z.re);
-
-export const conjugate = (z: ComplexNumber): ComplexNumber => ({
-  re: z.re,
-  im: z.im === 0 ? 0 : -z.im,
-});
-
-export const add = (z: ComplexNumber, w: ComplexNumber): ComplexNumber => ({
-  re: z.re + w.re,
-  im: z.im + w.im,
-});
-
-export const multiply = (
-  z: ComplexNumber,
-  w: ComplexNumber
-): ComplexNumber => ({
-  re: z.re * w.re - z.im * w.im,
-  im: z.re * w.im + z.im * w.re,
-});
-
-export const inverse = (z: ComplexNumber): ComplexNumber => {
-  if (isEqualTo(z, ZERO)) {
-    throw new Error("Zero has no inverse.");
+export function getComplexNumbers(tolerance: number = 1e-4): {
+  constants: Record<string, ComplexNumber>;
+  factory: (re: number, im: number) => ComplexNumber;
+} {
+  if (!isPositiveNumber(tolerance)) {
+    throw new Error("The tolerance must be a positive number");
   }
 
-  const conj = conjugate(z);
-  const modSqrd = modulus(z) ** 2;
+  return {
+    constants: {
+      ZERO: new ComplexNumber(0, 0, tolerance),
+      ONE: new ComplexNumber(1, 0, tolerance),
+      NEGONE: new ComplexNumber(-1, 0, tolerance),
+      I: new ComplexNumber(0, 1, tolerance),
+      NEGI: new ComplexNumber(0, -1, tolerance),
+      INFINITY: new ComplexNumber(Infinity, Infinity, tolerance),
+    },
+    factory: (re: number, im: number): ComplexNumber => {
+      return new ComplexNumber(re, im, tolerance);
+    },
+  };
+}
 
-  return scale(conj, 1 / modSqrd);
-};
+export class ComplexNumber implements ComplexNumberInterface {
+  readonly re: number;
+  readonly im: number;
+  readonly modulus: number;
+  readonly argument: number | null;
+  public _tolerance: number;
 
-export const divide = (z: ComplexNumber, w: ComplexNumber): ComplexNumber => {
-  if (isEqualTo(w, ZERO)) {
-    throw new Error("Cannot divide by zero.");
+  constructor(re: number = 0, im: number = 0, tolerance: number = 1e-4) {
+    if (!isPositiveNumber(tolerance)) {
+      throw new Error("The tolerance must be a positive number");
+    }
+
+    const infiniteInputs = re === Infinity || im === Infinity;
+    if (infiniteInputs) {
+      if (!(re === Infinity && im === Infinity)) {
+        throw new Error(
+          "If one of the real or imaginary part is infinite, the other must be as well",
+        );
+      }
+    }
+
+    this.re = re;
+    this.im = im;
+    this.modulus = Math.hypot(re, im);
+    this.argument = infiniteInputs ? null : Math.atan2(im, re);
+    this._tolerance = tolerance;
   }
 
-  return multiply(z, inverse(w));
-};
+  get tolerance() {
+    return this._tolerance;
+  }
 
-export const subtract = (z: ComplexNumber, w: ComplexNumber): ComplexNumber =>
-  add(z, scale(w, -1));
+  set tolerance(newTolerance: number) {
+    if (!isPositiveNumber(newTolerance)) {
+      throw new Error("Tolerance must be positive");
+    }
+    this._tolerance = newTolerance;
+  }
 
-export const eucDistance = (z: ComplexNumber, w: ComplexNumber): number =>
-  modulus(subtract(w, z));
+  static ZERO: ComplexNumber = new ComplexNumber();
+  static ONE: ComplexNumber = new ComplexNumber(1, 0);
+  static NEGONE: ComplexNumber = new ComplexNumber(-1, 0);
+  static I: ComplexNumber = new ComplexNumber(0, 1);
+  static NEGI: ComplexNumber = new ComplexNumber(0, -1);
+  static INFINITY: ComplexNumber = new ComplexNumber(Infinity, Infinity);
 
-export const pointOnUnitCircle = (theta: number): ComplexNumber =>
-  toComplex(Math.cos(theta), Math.sin(theta));
+  static UNITCIRCLE(theta: number): ComplexNumber {
+    return new ComplexNumber(Math.cos(theta), Math.sin(theta));
+  }
 
-export const angleBetween = (z: ComplexNumber, w: ComplexNumber) => Math.abs(argument(z) - argument(w));
+  isEqualTo(w: ComplexNumber): boolean {
+    if (this.re === Infinity || this.im === Infinity) {
+      return w.re === Infinity && w.im === Infinity;
+    }
 
-export const nthRoot = (z: ComplexNumber, n: number = 2): ComplexNumber => {
-  if (n === 0) return ONE;
+    return (
+      Math.abs(this.re - w.re) < this._tolerance &&
+      Math.abs(this.im - w.im) < this._tolerance
+    );
+  }
 
-  const rootModulus = Math.pow(modulus(z), 1 / n);
-  const rootArg = argument(z) / n;
+  scale(lambda: number): ComplexNumber {
+    return new ComplexNumber(this.re * lambda, this.im * lambda);
+  }
 
-  return toComplex(
-    rootModulus * Math.cos(rootArg),
-    rootModulus * Math.sin(rootArg)
-  );
-};
+  conjugate(): ComplexNumber {
+    return new ComplexNumber(this.re, this.im === 0 ? 0 : -this.im);
+  }
+
+  add(w: ComplexNumber): ComplexNumber {
+    return new ComplexNumber(this.re + w.re, this.im + w.im);
+  }
+
+  subtract(w: ComplexNumber): ComplexNumber {
+    return this.add(w.scale(-1));
+  }
+
+  multiply(w: ComplexNumber): ComplexNumber {
+    return new ComplexNumber(
+      this.re * w.re - this.im * w.im,
+      this.re * w.im + this.im * w.re,
+    );
+  }
+
+  inverse(): ComplexNumber {
+    if (this.isEqualTo(ComplexNumber.ZERO)) {
+      throw new Error("Zero has no inverse.");
+    }
+
+    return this.conjugate().scale(1 / this.modulus ** 2);
+  }
+
+  divide(w: ComplexNumber): ComplexNumber {
+    if (w.isEqualTo(ComplexNumber.ZERO)) {
+      throw new Error("Cannot divide by zero.");
+    }
+
+    return this.multiply(w.inverse());
+  }
+
+  eucDistance(w: ComplexNumber): number {
+    return this.subtract(w).modulus;
+  }
+
+  angleBetween(w: ComplexNumber): number {
+    const arg1 = this.argument;
+    const arg2 = w.argument;
+
+    if (arg1 === null || arg2 === null) {
+      throw new Error("Cannot find angle with infinity");
+    }
+
+    return Math.abs(arg1 - arg2);
+  }
+
+  nthRoot(n: number = 2): ComplexNumber {
+    if (this.argument === null) {
+      throw new Error("Cannot take a root of infinity");
+    }
+
+    if (n === 0) return ComplexNumber.ONE;
+
+    const rootModulus = Math.pow(this.modulus, 1 / n);
+    const rootArg = this.argument / n;
+
+    const onUnitCircle = ComplexNumber.UNITCIRCLE(rootArg);
+    return onUnitCircle.scale(rootModulus);
+  }
+}

@@ -1,761 +1,572 @@
+import { ComplexNumber } from "../general-math/complex-numbers";
+import { isPositiveNumber } from "../util";
+import { getUhpPoints, UhpPoint } from "./points";
 import {
-  angleBetween,
-  eucDistance,
-  scale,
-  toComplex,
-} from "../general-math/complex-numbers";
-import {
-  ComplexNumber,
-  PointAtInfinity,
-  PositiveNumber,
-  UhpBoundaryPoint,
   UhpCircle,
   UhpGeodesic,
-  UhpGeodesicPoints,
-  UhpGeodesicRay,
   UhpGeodesicSegment,
   UhpHorocycle,
-  UhpInteriorPoint,
-  UhpPoint,
   UhpPolygon,
-  UhpRealLine,
-} from "../types-validators/types";
-import {
-  isOnRealLine,
-  isPointAtInfinity,
-  isPositiveNumber,
-  isUhpBoundaryPoint,
-  isUhpInteriorPoint,
-} from "../types-validators/validators";
+} from "./types";
 
-// Used to determine when floats are close enough to be considered the same
-const TOLERANCE = 1e-4;
+export class UhpGeometry {
+  // Fields and Constructor
+  //#region
+  public _tolerance: number;
+  private constants: Record<string, UhpPoint>;
+  private pointFactory: (re: number, im: number) => UhpPoint;
 
-// Factory functions
-//#region
-export const toPointAtInfinity = (re: number, im: number): PointAtInfinity => {
-  const z = toComplex(re, im);
-  if (isPointAtInfinity(z)) {
-    return { re: Infinity, im: Infinity, __brand: "PointAtInfinity" };
-  }
-  throw new Error("At least one of the inputs must be Infinity");
-};
+  constructor(tolerance: number = 1e-4) {
+    if (!isPositiveNumber(tolerance)) {
+      throw new Error("The tolerance must be a positive number");
+    }
 
-export const toUhpRealLine = (re: number, im: number): UhpRealLine => {
-  const z = toComplex(re, im);
-  if (isOnRealLine(z)) return z;
-  if (!Number.isFinite(re)) throw new Error("Real part must be finite");
-  throw new Error("Imaginary part must be zero");
-};
+    const { constants, factory } = getUhpPoints(tolerance);
 
-export const toUhpInteriorPoint = (
-  re: number,
-  im: number
-): UhpInteriorPoint => {
-  const z = toComplex(re, im);
-  if (isUhpInteriorPoint(z)) return z;
-  if (!Number.isFinite(re)) throw new Error("Real part must be finite");
-  if (!Number.isFinite(im)) throw new Error("Imaginary part must be finite");
-  throw new Error("Imaginary part must be positive");
-};
-
-export const toUhpBoundaryPoint = (
-  re: number,
-  im: number
-): UhpBoundaryPoint => {
-  const z = toComplex(re, im);
-  if (isPointAtInfinity(z) || isOnRealLine(z)) return z;
-  throw new Error(
-    "Invalid Uhp boundary point. Must be of the form (Infinity, Infinity) or (Finite, 0)"
-  );
-};
-
-// export const toUhpBoundaryPoint = (
-//   re: number,
-//   im: number
-// ): UhpBoundaryPoint => {
-//   const z = toComplex(re, im);
-//   if (isUhpBoundaryPoint(z)) return z;
-//   if (!Number.isFinite(re)) throw new Error("Real part must be finite");
-//   throw new Error("Imaginary part must be zero");
-// };
-
-export const toUhpPoint = (re: number, im: number): UhpPoint => {
-  const z = toComplex(re, im);
-  if (isUhpBoundaryPoint(z) || isUhpInteriorPoint(z)) return z;
-  throw new Error(
-    "Invalid Uhp point. Must be one of the following forms (Infinity, Infinity); (Finite, 0); (Finite, Finite and positive)"
-  );
-};
-//#endregion
-
-// Constants
-//#region
-export const I: UhpInteriorPoint = toUhpInteriorPoint(0, 1);
-export const UhpINFINITY: PointAtInfinity = toPointAtInfinity(
-  Infinity,
-  Infinity
-);
-export const ZERO: UhpBoundaryPoint = { re: 0, im: 0 };
-export const ONE: UhpBoundaryPoint = { re: 1, im: 0 };
-export const NEGONE: UhpBoundaryPoint = { re: -1, im: 0 };
-//#endregion
-
-// Distance formula
-//#region
-export const uhpDistance = (z: UhpPoint, w: UhpPoint): number => {
-  if (isUhpBoundaryPoint(z) || isUhpBoundaryPoint(w)) {
-    return Infinity;
+    this._tolerance = tolerance;
+    this.constants = constants;
+    this.pointFactory = factory;
   }
 
-  return 2 * Math.asinh(eucDistance(z, w) / (2 * Math.sqrt(z.im * w.im)));
-};
-//#endregion
+  get tolerance() {
+    return this._tolerance;
+  }
 
-// Angles
-//#region
-// "position" here refers to the angle of point on the parameterization of a non-vertical geodesic: (radius * cos(t) + center.re, radius * sin(t))
-export const positionOnGeodesic = (
-  z: UhpPoint,
-  geod: UhpGeodesic,
-  tolerance: number = TOLERANCE
-): number => {
-  const { isVertical, center, radius } = geod;
+  set tolerance(newTolerance: number) {
+    if (!isPositiveNumber(newTolerance)) {
+      throw new Error("Tolerance must be positive");
+    }
+    this._tolerance = newTolerance;
+  }
+  //#endregion
 
-  if (isVertical) {
-    throw new Error(
-      "Points on vertical geodesics are not parameterized by angle"
+  // Distance function
+  //#region
+  distance(z: UhpPoint, w: UhpPoint): number {
+    if (z.type === "boundary" || w.type === "boundary") {
+      return Infinity;
+    }
+
+    return 2 * Math.asinh(z.eucDistance(w) / (2 * Math.sqrt(z.im * w.im)));
+  }
+  //#endregion
+
+  // Angles
+  //#region
+  // "position" here refers to the angle of point on the parameterization of a non-vertical geodesic: (radius * cos(t) + center.re, radius * sin(t))
+  positionOnGeodesic(z: UhpPoint, geod: UhpGeodesic): number {
+    const { isVertical, center, radius } = geod;
+
+    if (isVertical) {
+      throw new Error(
+        "Points on vertical geodesics are not parameterized by angle",
+      );
+    }
+
+    if (
+      Math.abs(Math.hypot(z.re - center.re, z.im) - radius) >= this._tolerance
+    ) {
+      throw new Error("Point does not lie on this geodesic");
+    }
+
+    return Math.atan2(z.im, z.re - center.re);
+  }
+
+  // dirPoint is a point on the geodesic that determines which of the two possible tangent vectors we return, e.g., up vs down for a vertical geodesic
+  tangentAtPointOnGeodesic(
+    basePoint: UhpPoint,
+    dirPoint: UhpPoint,
+  ): ComplexNumber {
+    const geod = this.geodesicThroughPoints(basePoint, dirPoint);
+
+    if (geod.isVertical) {
+      const vertPart = dirPoint.im > basePoint.im ? 1 : -1;
+      return new ComplexNumber(0, vertPart);
+    }
+
+    const basePosition = this.positionOnGeodesic(basePoint, geod);
+    const dirPosition = this.positionOnGeodesic(dirPoint, geod);
+
+    const headingRight = basePosition - dirPosition > 0;
+    const tangent = new ComplexNumber(
+      -Math.sin(basePosition),
+      Math.cos(basePosition),
+    );
+
+    if (headingRight) tangent.scale(-1);
+    return tangent;
+  }
+
+  // Finds the angle at q of the intersection of the pq-geodesic and the qr geodesic
+  angleFromThreePoints(p: UhpPoint, q: UhpPoint, r: UhpPoint): number {
+    if (q.subType === "infinity" || p.isEqualTo(r)) return 0;
+
+    const pqTangent = this.tangentAtPointOnGeodesic(q, p);
+    const qrTangent = this.tangentAtPointOnGeodesic(q, r);
+
+    return pqTangent.angleBetween(qrTangent);
+  }
+  //#endregion
+
+  // Geodesics
+  //#region
+  getPointOnGeodesic(
+    radius: number,
+    centerRe: number,
+    theta: number,
+  ): UhpPoint {
+    if (!isPositiveNumber(radius)) {
+      throw new Error("Radius must be positive");
+    }
+
+    if (Math.abs(theta % Math.PI) < this._tolerance) {
+      return this.pointFactory(radius * Math.cos(theta) + centerRe, 0);
+    }
+
+    return this.pointFactory(
+      radius * Math.cos(theta) + centerRe,
+      radius * Math.sin(theta),
     );
   }
 
-  if (Math.abs(Math.hypot(z.re - center.re, z.im) - radius) >= tolerance) {
-    throw new Error("Point does not lie on this geodesic");
-  }
+  geodesicWithPointAtInfinity(
+    z: UhpPoint,
+    infinityFirst: boolean = false,
+  ): UhpGeodesic {
+    const geodesic: UhpGeodesic = {
+      isVertical: true,
+      center: this.constants.INFINITY,
+      radius: Infinity,
+      points: [],
+    };
 
-  return Math.atan2(z.im, z.re - center.re);
-};
+    if (z.type === "boundary") {
+      const lowIntPoint = this.pointFactory(z.re, 1);
+      const highIntPoint = this.pointFactory(z.re, 2);
 
-// dirPoint is a point on the geodesic that determines which of the two possible tangent vectors we return, e.g., up vs down for a vertical geodesic
-export const tangentAtPointOnGeodesic = (
-  basePoint: UhpPoint,
-  dirPoint: UhpPoint
-): ComplexNumber => {
-  const geod = geodesicThroughPoints(basePoint, dirPoint);
-
-  if (geod.isVertical) {
-    const vertPart = dirPoint.im > basePoint.im ? 1 : -1;
-    return toComplex(0, vertPart);
-  }
-
-  const basePosition = positionOnGeodesic(basePoint, geod);
-  const dirPosition = positionOnGeodesic(dirPoint, geod);
-
-  const headingRight = basePosition - dirPosition > 0;
-  const tangent = toComplex(-Math.sin(basePosition), Math.cos(basePosition));
-
-  if (headingRight) {
-    return scale(tangent, -1);
-  }
-
-  return tangent;
-};
-
-// Finds the angle at q of the intersection of the pq-geodesic and the qr geodesic
-export const angleFromThreePoints = (
-  p: UhpPoint,
-  q: UhpPoint,
-  r: UhpPoint
-): number => {
-  if (isPointAtInfinity(q) || (p.re === r.re && p.im === r.im)) return 0;
-
-  const pqTangent = tangentAtPointOnGeodesic(q, p);
-  const qrTangent = tangentAtPointOnGeodesic(q, r);
-
-  return angleBetween(pqTangent, qrTangent);
-};
-//#endregion
-
-// Geodesics
-//#region
-export const getPointOnGeodesic = (
-  radius: number,
-  centerRe: number,
-  theta: number,
-  tolerance: number = TOLERANCE
-): UhpBoundaryPoint | UhpInteriorPoint => {
-  if (!isPositiveNumber(radius)) {
-    throw new Error("Radius must be positive");
-  }
-
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  if (Math.abs(theta % Math.PI) < tolerance) {
-    return toUhpBoundaryPoint(radius * Math.cos(theta) + centerRe, 0);
-  }
-
-  return toUhpInteriorPoint(
-    radius * Math.cos(theta) + centerRe,
-    radius * Math.sin(theta)
-  );
-};
-
-export const geodesicWithPointAtInfinity = (
-  z: UhpBoundaryPoint | UhpInteriorPoint,
-  infinityFirst: boolean = false
-): UhpGeodesic => {
-  const isVertical = true;
-  const center = UhpINFINITY;
-  const radius = Infinity;
-  const points: UhpGeodesicPoints = (() => {
-    if (isUhpBoundaryPoint(z)) {
       if (infinityFirst) {
-        return [
-          UhpINFINITY,
-          toUhpInteriorPoint(z.re, 2),
-          toUhpInteriorPoint(z.re, 1),
+        geodesic.points.push(
+          this.constants.INFINITY,
+          highIntPoint,
+          lowIntPoint,
           z,
-        ];
+        );
+      } else {
+        geodesic.points.push(
+          z,
+          lowIntPoint,
+          highIntPoint,
+          this.constants.INFINITY,
+        );
+      }
+    } else {
+      const bdryPoint = this.pointFactory(z.re, 0);
+      const intPoint = this.pointFactory(z.re, 2 * z.im);
+
+      if (infinityFirst) {
+        geodesic.points.push(this.constants.INFINITY, intPoint, z, bdryPoint);
+      } else {
+        geodesic.points.push(bdryPoint, z, intPoint, this.constants.INFINITY);
+      }
+    }
+
+    return geodesic;
+  }
+
+  getGeodesicCenterAndRadius(
+    z: UhpPoint,
+    w: UhpPoint,
+  ): { center: UhpPoint; radius: number } {
+    const getRadius = (centerRe: number) => Math.hypot(z.re - centerRe, z.im);
+
+    /**
+     * Case 1: Points have the same imaginary part (up to tolerance)
+     * In this case the center has real part that is the midpoint of the given points real parts
+     */
+    const deltaIm = w.im - z.im;
+    const midpointRe = (z.re + w.re) / 2;
+    if (Math.abs(deltaIm) < this._tolerance) {
+      return {
+        center: this.pointFactory(midpointRe, 0),
+        radius: getRadius(midpointRe),
+      };
+    }
+
+    /**
+     * Case 2: Points have different imaginary parts
+     * In this case we find the slope m of the line L connecting the two given points
+     * Then we find the equation of the perpendicular bisector of L:
+     *    y - midpointIm = (-1 / m)*(x - midpointRe)
+     * Setting y = 0 in this equation and solving for x gives the real part of our center
+     */
+    const midpointIm = (z.im + w.im) / 2;
+    const deltaRe = w.re - z.re;
+    const slope = deltaIm / deltaRe;
+    const centerRe = midpointRe + slope * midpointIm;
+
+    return {
+      center: this.pointFactory(centerRe, 0),
+      radius: getRadius(centerRe),
+    };
+  }
+
+  geodesicConnectingFinitePoints(z: UhpPoint, w: UhpPoint): UhpGeodesic {
+    if (z.subType === "infinity" || w.subType === "infinity") {
+      throw new Error("Both points must have finite real and imaginary parts");
+    }
+
+    // All cases below will use these values
+    const isVertical = Math.abs(w.re - z.re) < this._tolerance;
+
+    /**
+     * Case 1: The points have the same real part (up to tolerance)
+     * In this case the geodesic is the vertical line going through them.
+     * The center is the point at infinity and the radius is infinite.
+     * In all cases, the point at infinity is the last endpoint. If either point is an endpoint, then we can choose a second interior point using the other point. If both are interior points, then the first endpoints is the point below them on the real axis
+     */
+    if (isVertical) {
+      const geodesic: UhpGeodesic = {
+        isVertical,
+        center: this.constants.INFINITY,
+        radius: Infinity,
+        points: [],
+      };
+
+      if (z.type === "interior" && w.type === "interior") {
+        geodesic.points.push(
+          this.pointFactory(z.re, 0),
+          z,
+          w,
+          this.constants.INFINITY,
+        );
+      } else if (z.type === "boundary" && w.type === "interior") {
+        geodesic.points.push(
+          z,
+          this.pointFactory(w.re, w.im / 2),
+          w,
+          this.constants.INFINITY,
+        );
+      } else if (z.type === "interior" && w.type === "boundary") {
+        geodesic.points.push(
+          w,
+          this.pointFactory(z.re, z.im / 2),
+          z,
+          this.constants.INFINITY,
+        );
+      } else {
+        throw new Error(
+          "Two distinct boundary points cannot form a vertical geodesic",
+        );
       }
 
-      return [
-        z,
-        toUhpInteriorPoint(z.re, 1),
-        toUhpInteriorPoint(z.re, 2),
-        UhpINFINITY,
-      ];
+      return geodesic;
     }
 
-    if (infinityFirst) {
-      return [
-        UhpINFINITY,
-        toUhpInteriorPoint(z.re, 2 * z.im),
-        z,
-        toUhpBoundaryPoint(z.re, 0),
-      ];
+    // The order of the geodesic points in the rest of the cases depend on the relative position of z and w
+    const zLeftOfW = z.re < w.re;
+
+    /**
+     * Case 2: Both points are on the boundary
+     * In this case the geodesic is the the half circle connecting the two points and meeting the real axis at a right angle
+     * The center is the midpoint of the two input points and the radius is half of their separation.
+     * We can choose the interior points to be those points on the circle 1/4 and 3/4 of the way from z to w
+     */
+    if (z.type === "boundary" && w.type === "boundary") {
+      const center = this.pointFactory((z.re + w.re) / 2, 0);
+      const radius = Math.abs(z.re - w.re) / 2;
+
+      const oneQuarter = this.getPointOnGeodesic(
+        radius,
+        center.re,
+        0.25 * Math.PI,
+      );
+      const threeQuarter = this.getPointOnGeodesic(
+        radius,
+        center.re,
+        0.75 * Math.PI,
+      );
+
+      const points = zLeftOfW
+        ? [z, threeQuarter, oneQuarter, w]
+        : [z, oneQuarter, threeQuarter, w];
+
+      return {
+        isVertical,
+        center,
+        radius,
+        points,
+      };
     }
 
-    return [
-      toUhpBoundaryPoint(z.re, 0),
-      z,
-      toUhpInteriorPoint(z.re, 2 * z.im),
-      UhpINFINITY,
-    ];
-  })();
+    // Due to the symmetry of the remaining cases, the center and radius will be the same for all of them
+    const { center, radius } = this.getGeodesicCenterAndRadius(z, w);
 
-  return {
-    isVertical,
-    center,
-    radius,
-    points,
-  };
-};
+    /**
+     * Case 3: One point is on the boundary and one point is in the interior
+     * As in the previous case, the geodesic is the the half circle connecting the two points and meeting the real axis at a right angle
+     * The center lies on the real axis and is found by (i) finding the perpendicular bisector of the line connecting the two points and then (ii) finding the intersection of the perpendicular bisector with the real axis
+     * The first endpoint is one of the given points and the second is the other intersection point of the geodesic with the real axis. The second interior point can be chosen to have half the argument of the first interior point
+     */
+    if (z.type === "interior" && w.type === "boundary") {
+      const zArg = Math.atan2(z.im, z.re - center.re);
+      const intPoint = this.getPointOnGeodesic(radius, center.re, zArg / 2);
 
-export const getGeodesicCenterAndRadius = (
-  z: UhpPoint,
-  w: UhpPoint,
-  tolerance: PositiveNumber
-): { center: UhpBoundaryPoint; radius: number } => {
-  const getRadius = (centerRe: number) => Math.hypot(z.re - centerRe, z.im);
+      return {
+        isVertical,
+        center,
+        radius,
+        points: zLeftOfW
+          ? [this.pointFactory(center.re - radius, 0), z, intPoint, w]
+          : [this.pointFactory(center.re + radius, 0), intPoint, z, w],
+      };
+    }
+    if (z.type === "boundary" && w.type === "interior") {
+      const wArg = Math.atan2(w.re - center.re, w.im);
+      const intPoint = this.getPointOnGeodesic(radius, center.re, wArg / 2);
 
-  /**
-   * Case 1: Points have the same imaginary part (up to tolerance)
-   * In this case the center has real part that is the midpoint of the given points real parts
-   */
-  const deltaIm = w.im - z.im;
-  const midpointRe = (z.re + w.re) / 2;
-  if (Math.abs(deltaIm) < tolerance) {
+      return {
+        isVertical,
+        center,
+        radius,
+        points: zLeftOfW
+          ? [z, w, intPoint, this.pointFactory(center.re + radius, 0)]
+          : [z, intPoint, w, this.pointFactory(center.re - radius, 0)],
+      };
+    }
+
+    /**
+     * Case 4: Both points are in the interior
+     * This case is very similar to the previous case, except that the endpoints are a bit easier to determine since both given points are in the interior
+     */
+    const leftEndpoint = this.pointFactory(center.re - radius, 0);
+    const rightEndpoint = this.pointFactory(center.re + radius, 0);
+
     return {
-      center: { re: midpointRe, im: 0 },
-      radius: getRadius(midpointRe),
+      isVertical,
+      center,
+      radius,
+      points: zLeftOfW
+        ? [leftEndpoint, z, w, rightEndpoint]
+        : [rightEndpoint, z, w, leftEndpoint],
     };
   }
 
-  /**
-   * Case 2: Points have different imaginary parts
-   * In this case we find the slope m of the line L connecting the two given points
-   * Then we find the equation of the perpendicular bisector of L:
-   *    y - midpointIm = (-1 / m)*(x - midpointRe)
-   * Setting y = 0 in this equation and solving for x gives the real part of our center
-   */
-  const midpointIm = (z.im + w.im) / 2;
-  const deltaRe = w.re - z.re;
-  const slope = deltaIm / deltaRe;
-  const centerRe = midpointRe + slope * midpointIm;
+  geodesicThroughPoints(z: UhpPoint, w: UhpPoint): UhpGeodesic {
+    if (z.isEqualTo(w)) {
+      throw new Error("Input points must be distinct");
+    }
 
-  return {
-    center: { re: centerRe, im: 0 },
-    radius: getRadius(centerRe),
-  };
-};
+    if (z.subType === "infinity" || w.subType === "infinity") {
+      if (z.subType === "infinity" && w.subType !== "infinity") {
+        return this.geodesicWithPointAtInfinity(w, true);
+      }
 
-export const geodesicConnectingFinitePoints = (
-  z: UhpInteriorPoint | UhpBoundaryPoint,
-  w: UhpInteriorPoint | UhpBoundaryPoint,
-  tolerance: PositiveNumber
-): UhpGeodesic => {
-  // All cases below will use these values
-  const isVertical = Math.abs(w.re - z.re) < tolerance;
+      return this.geodesicWithPointAtInfinity(z);
+    }
 
-  /**
-   * Case 1: The points have the same real part (up to tolerance)
-   * In this case the geodesic is the vertical line going through them.
-   * The center is the point at infinity and the radius is infinite.
-   * In all cases, the point at infinity is the last endpoint. If either point is an endpoint, then we can choose a second interior point using the other point. If both are interior points, then the first endpoints is the point below them on the real axis
-   */
-  if (isVertical) {
-    const center = UhpINFINITY;
-    const radius = Infinity;
+    return this.geodesicConnectingFinitePoints(z, w);
+  }
 
-    if (isUhpInteriorPoint(z) && isUhpInteriorPoint(w)) {
+  geodesicFromBaseAndDirection(
+    base: UhpPoint,
+    direction: ComplexNumber,
+  ): UhpGeodesic {
+    if (direction.isEqualTo(ComplexNumber.INFINITY)) {
+      throw new Error("The point at infinity is not a valid direction vector");
+    }
+
+    const isVertical = Math.abs(direction.re) < this._tolerance;
+    if (isVertical) {
+      const infinityFirst = direction.im < 0;
+      return this.geodesicWithPointAtInfinity(base, infinityFirst);
+    }
+
+    const centerRe = base.re + base.im * (direction.im / direction.re);
+    const center = this.pointFactory(centerRe, 0);
+    const radius = Math.hypot(base.re - centerRe, base.im);
+
+    const leftEndpoint = this.pointFactory(centerRe - radius, 0);
+    const rightEndpoint = this.pointFactory(centerRe + radius, 0);
+    const headingRight = direction.re > this._tolerance;
+
+    if (base.type === "boundary") {
+      const oneQuarterPoint = this.getPointOnGeodesic(
+        radius,
+        centerRe,
+        0.25 * Math.PI,
+      );
+      const threeQuarterPoint = this.getPointOnGeodesic(
+        radius,
+        centerRe,
+        0.75 * Math.PI,
+      );
+
       return {
         isVertical,
         center,
         radius,
-        points: [toUhpBoundaryPoint(z.re, 0), z, w, UhpINFINITY],
+        points: headingRight
+          ? [base, threeQuarterPoint, oneQuarterPoint, rightEndpoint]
+          : [base, oneQuarterPoint, threeQuarterPoint, leftEndpoint],
       };
     }
 
-    if (isUhpBoundaryPoint(z) && isUhpInteriorPoint(w)) {
-      return {
-        isVertical,
-        center,
-        radius,
-        points: [z, toUhpInteriorPoint(w.re, w.im / 2), w, UhpINFINITY],
-      };
-    }
-
-    if (isUhpInteriorPoint(z) && isUhpBoundaryPoint(w)) {
-      return {
-        isVertical,
-        center,
-        radius,
-        points: [w, toUhpInteriorPoint(z.re, z.im / 2), z, UhpINFINITY],
-      };
-    }
-
-    throw new Error(
-      "Two distinct boundary points cannot form a vertical geodesic"
+    const baseArg = Math.atan2(base.im, base.re - centerRe);
+    const pointLeftOfBase = this.getPointOnGeodesic(
+      radius,
+      centerRe,
+      (Math.PI + baseArg) / 2,
     );
-  }
-
-  // The order of the geodesic points in the rest of the cases depend on the relative position of z and w
-  const zLeftOfW = z.re < w.re;
-
-  /**
-   * Case 2: Both points are on the boundary
-   * In this case the geodesic is the the half circle connecting the two points and meeting the real axis at a right angle
-   * The center is the midpoint of the two input points and the radius is half of their separation.
-   * We can choose the interior points to be those points on the circle 1/4 and 3/4 of the way from z to w
-   */
-  if (isUhpBoundaryPoint(z) && isUhpBoundaryPoint(w)) {
-    const center: UhpBoundaryPoint = { re: (z.re + w.re) / 2, im: 0 };
-    const radius = Math.abs(z.re - w.re) / 2;
-
-    const oneQuarter = getPointOnGeodesic(
-      radius,
-      center.re,
-      0.25 * Math.PI
-    ) as UhpInteriorPoint;
-    const threeQuarter = getPointOnGeodesic(
-      radius,
-      center.re,
-      0.75 * Math.PI
-    ) as UhpInteriorPoint;
-
-    const points: UhpGeodesicPoints = zLeftOfW
-      ? [z, threeQuarter, oneQuarter, w]
-      : [z, oneQuarter, threeQuarter, w];
-
-    return {
-      isVertical,
-      center,
-      radius,
-      points,
-    };
-  }
-
-  // Due to the symmetry of the remaining cases, the center and radius will be the same for all of them
-  const { center, radius } = getGeodesicCenterAndRadius(z, w, tolerance);
-
-  /**
-   * Case 3: One point is on the boundary and one point is in the interior
-   * As in the previous case, the geodesic is the the half circle connecting the two points and meeting the real axis at a right angle
-   * The center lies on the real axis and is found by (i) finding the perpendicular bisector of the line connecting the two points and then (ii) finding the intersection of the perpendicular bisector with the real axis
-   * The first endpoint is one of the given points and the second is the other intersection point of the geodesic with the real axis. The second interior point can be chosen to have half the argument of the first interior point
-   */
-  if (isUhpInteriorPoint(z) && isUhpBoundaryPoint(w)) {
-    const zArg = Math.atan2(z.im, z.re - center.re);
-    const intPoint = getPointOnGeodesic(
-      radius,
-      center.re,
-      zArg / 2
-    ) as UhpInteriorPoint;
-
-    return {
-      isVertical,
-      center,
-      radius,
-      points: zLeftOfW
-        ? [toUhpBoundaryPoint(center.re - radius, 0), z, intPoint, w]
-        : [toUhpBoundaryPoint(center.re + radius, 0), intPoint, z, w],
-    };
-  }
-  if (isUhpBoundaryPoint(z) && isUhpInteriorPoint(w)) {
-    const wArg = Math.atan2(w.re - center.re, w.im);
-    const intPoint = getPointOnGeodesic(
-      radius,
-      center.re,
-      wArg / 2
-    ) as UhpInteriorPoint;
-
-    return {
-      isVertical,
-      center,
-      radius,
-      points: zLeftOfW
-        ? [z, w, intPoint, toUhpBoundaryPoint(center.re + radius, 0)]
-        : [z, intPoint, w, toUhpBoundaryPoint(center.re - radius, 0)],
-    };
-  }
-
-  if (!isUhpInteriorPoint(z) || !isUhpInteriorPoint(w)) {
-    // This should never happen, but is included
-    throw new Error("Reached final case with two non-interior points");
-  }
-
-  /**
-   * Case 4: Both points are in the interior
-   * This case is very similar to the previous case, except that the endpoints are a bit easier to determine since both given points are in the interior
-   */
-  const leftEndpoint: UhpBoundaryPoint = { re: center.re - radius, im: 0 };
-  const rightEndpoint: UhpBoundaryPoint = { re: center.re + radius, im: 0 };
-
-  return {
-    isVertical,
-    center,
-    radius,
-    points: zLeftOfW
-      ? [leftEndpoint, z, w, rightEndpoint]
-      : [rightEndpoint, z, w, leftEndpoint],
-  };
-};
-
-export const geodesicThroughPoints = (
-  z: UhpPoint,
-  w: UhpPoint,
-  tolerance: number = TOLERANCE
-): UhpGeodesic => {
-  if (z.re === w.re && z.im === w.im) {
-    throw new Error("Input points must be distinct");
-  }
-
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  if (isPointAtInfinity(z) || isPointAtInfinity(w)) {
-    if (isPointAtInfinity(z) && !isPointAtInfinity(w)) {
-      return geodesicWithPointAtInfinity(w);
-    }
-
-    if (!isPointAtInfinity(z) && isPointAtInfinity(w)) {
-      return geodesicWithPointAtInfinity(z);
-    }
-
-    throw new Error("Both points cannot be the point at infinity");
-  }
-
-  return geodesicConnectingFinitePoints(z, w, tolerance);
-};
-
-export const geodesicFromBaseAndDirection = (
-  base: UhpInteriorPoint | UhpBoundaryPoint,
-  direction: ComplexNumber,
-  tolerance: number = TOLERANCE
-): UhpGeodesic => {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  if (isPointAtInfinity(direction)) {
-    throw new Error("The point at infinity is not a valid direction vector");
-  }
-
-  const isVertical = Math.abs(direction.re) < tolerance;
-  if (isVertical) {
-    const infinityFirst = direction.im < -tolerance;
-    return geodesicWithPointAtInfinity(base, infinityFirst);
-  }
-
-  const centerRe = base.re + base.im * (direction.im / direction.re);
-  const center = toUhpBoundaryPoint(centerRe, 0);
-  const radius = Math.hypot(base.re - centerRe, base.im);
-
-  const leftEndpoint = toUhpBoundaryPoint(centerRe - radius, 0);
-  const rightEndpoint = toUhpBoundaryPoint(centerRe + radius, 0);
-  const headingRight = direction.re > tolerance;
-
-  if (isUhpBoundaryPoint(base)) {
-    const oneQuarterPoint = getPointOnGeodesic(
+    const pointRightOfBase = this.getPointOnGeodesic(
       radius,
       centerRe,
-      0.25 * Math.PI
-    ) as UhpInteriorPoint;
-    const threeQuarterPoint = getPointOnGeodesic(
-      radius,
-      centerRe,
-      0.75 * Math.PI
-    ) as UhpInteriorPoint;
+      baseArg / 2,
+    );
 
     return {
       isVertical,
       center,
       radius,
       points: headingRight
-        ? [base, threeQuarterPoint, oneQuarterPoint, rightEndpoint]
-        : [base, oneQuarterPoint, threeQuarterPoint, leftEndpoint],
+        ? [leftEndpoint, base, pointRightOfBase, rightEndpoint]
+        : [rightEndpoint, base, pointLeftOfBase, leftEndpoint],
     };
   }
+  //#endregion
 
-  const baseArg = Math.atan2(base.im, base.re - centerRe);
-  const pointLeftOfBase = getPointOnGeodesic(
-    radius,
-    centerRe,
-    (Math.PI + baseArg) / 2
-  ) as UhpInteriorPoint;
-  const pointRightOfBase = getPointOnGeodesic(
-    radius,
-    centerRe,
-    baseArg / 2
-  ) as UhpInteriorPoint;
+  // Segments
+  //#region
+  segmentBetweenPoints(z: UhpPoint, w: UhpPoint): UhpGeodesicSegment {
+    if (z.isEqualTo(w)) {
+      throw new Error("Points need to be distinct");
+    }
 
-  return {
-    isVertical,
-    center,
-    radius,
-    points: headingRight
-      ? [leftEndpoint, base, pointRightOfBase, rightEndpoint]
-      : [rightEndpoint, base, pointLeftOfBase, leftEndpoint],
-  };
-};
-//#endregion
+    const geodesic = this.geodesicThroughPoints(z, w);
 
-// Segments and rays
-//#region
-export const segmentBetweenPoints = (
-  z: UhpPoint,
-  w: UhpPoint,
-  tolerance: number = TOLERANCE
-): UhpGeodesicSegment => {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  const geodesic = geodesicThroughPoints(z, w, tolerance);
-
-  if (isPointAtInfinity(z)) {
-    if (isPointAtInfinity(w)) {
-      throw new Error("Only one point may be the point at infinity");
+    if (z.subType === "infinity" || w.subType === "infinity") {
+      return {
+        ...geodesic,
+        intAngles: null,
+        intHeights: [geodesic.points[1].im, geodesic.points[2].im],
+        length: Infinity,
+      };
     }
 
     return {
       ...geodesic,
-      intAngles: null,
-      intHeights: [geodesic.points[1].im, geodesic.points[2].im],
-      length: Infinity,
+      intAngles: [
+        this.positionOnGeodesic(z, geodesic),
+        this.positionOnGeodesic(w, geodesic),
+      ],
+      intHeights: null,
+      length: this.distance(z, w),
     };
   }
+  //#endregion
 
-  if (Math.abs(z.re - w.re) < tolerance && Math.abs(z.im - w.im) < tolerance) {
-    throw new Error("Points need to be distinct");
-  }
-
-  return {
-    ...geodesic,
-    intAngles: geodesic.isVertical
-      ? null
-      : [positionOnGeodesic(z, geodesic), positionOnGeodesic(w, geodesic)],
-    intHeights: geodesic.isVertical ? [z.im, w.im] : null,
-    length: uhpDistance(z, w),
-  };
-};
-
-export const rayFromPointTowardPoint = (
-  base: UhpPoint,
-  point: UhpPoint,
-  tolerance: number = TOLERANCE
-): UhpGeodesicRay => {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  if (isPointAtInfinity(base)) {
-    if (isPointAtInfinity(point)) {
-      throw new Error("Only one point can be the point at infinity");
+  // Circles
+  //#region
+  circleCenterAndRadius(center: UhpPoint, radius: number): UhpCircle {
+    if (!isPositiveNumber(radius)) {
+      throw new Error("Radius must be positive");
     }
 
-    const geodesic = geodesicThroughPoints(base, point, tolerance);
-
-    return {
-      ...geodesic,
-      baseAngle: null,
-      headingRight: null,
-      baseHeight: point.im,
-      headingUp: false,
-    };
-  }
-
-  if (
-    Math.abs(base.re - point.re) < tolerance &&
-    Math.abs(base.im - point.im) < tolerance
-  ) {
-    throw new Error("Points need to be distinct");
-  }
-
-  throw new Error("Not yet finished");
-};
-
-export const rayFromPointAndDirection = (
-  z: UhpInteriorPoint | UhpBoundaryPoint,
-  dir: { x: number; y: number },
-  tolerance: number = TOLERANCE
-): UhpGeodesicRay => {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
-  }
-
-  if (dir.x === 0 && dir.y === 0) {
-    throw new Error("Direction of ray cannot be the zero vector");
-  }
-
-  const geodesic = geodesicFromBaseAndDirection(
-    z,
-    toComplex(dir.x, dir.y),
-    tolerance
-  );
-
-  return {
-    ...geodesic,
-    baseAngle: geodesic.isVertical ? null : positionOnGeodesic(z, geodesic),
-    headingRight: geodesic.isVertical ? null : dir.x > tolerance,
-    baseHeight: geodesic.isVertical ? z.im : null,
-    headingUp: geodesic.isVertical ? dir.y > tolerance : null,
-  };
-};
-//#endregion
-
-// Circles
-//#region
-export const circleCenterAndRadius = (
-  center: UhpInteriorPoint,
-  radius: number
-): UhpCircle => {
-  if (!isPositiveNumber(radius)) {
-    throw new Error("Radius must be positive");
-  }
-
-  return {
-    center,
-    radius,
-    eucCenter: toUhpInteriorPoint(center.re, Math.cosh(radius) * center.im),
-    eucRadius: Math.sinh(radius) * center.im,
-  };
-};
-
-export const circleCenterAndBdryPoint = (
-  center: UhpInteriorPoint,
-  bdryPoint: UhpInteriorPoint
-): UhpCircle => {
-  const radius = uhpDistance(center, bdryPoint);
-  return circleCenterAndRadius(center, radius);
-};
-//#endregion
-
-// Horocycles
-//#region
-export const horocyleGivenCenter = (
-  center: UhpInteriorPoint | PointAtInfinity
-): UhpHorocycle => {
-  if (isPointAtInfinity(center)) {
     return {
       center,
-      basePoint: UhpINFINITY,
-      onHorPoint: I,
-      eucRadius: Infinity,
+      radius,
+      eucCenter: this.pointFactory(center.re, Math.cosh(radius) * center.im),
+      eucRadius: Math.sinh(radius) * center.im,
     };
   }
 
-  return {
-    center,
-    basePoint: { re: center.re, im: 0 },
-    onHorPoint: toUhpInteriorPoint(center.re, 2 * center.im),
-    eucRadius: center.im,
-  };
-};
+  circleCenterAndBdryPoint(center: UhpPoint, bdryPoint: UhpPoint): UhpCircle {
+    const radius = this.distance(center, bdryPoint);
+    return this.circleCenterAndRadius(center, radius);
+  }
+  //#endregion
 
-export const horocycleGivenBaseAndOnHor = (
-  basePoint: UhpBoundaryPoint | PointAtInfinity,
-  onHorPoint: UhpInteriorPoint
-): UhpHorocycle => {
-  if (isPointAtInfinity(basePoint)) {
+  // Horocycles
+  //#region
+  horocyleGivenCenter(center: UhpPoint): UhpHorocycle {
+    if (center.subType === "infinity") {
+      return {
+        center,
+        basePoint: this.constants.INFINITY,
+        onHorPoint: this.constants.I,
+        eucRadius: Infinity,
+      };
+    }
+
     return {
-      center: UhpINFINITY,
+      center,
+      basePoint: this.pointFactory(center.re, 0),
+      onHorPoint: this.pointFactory(center.re, 2 * center.im),
+      eucRadius: center.im,
+    };
+  }
+
+  horocycleGivenBaseAndOnHor(
+    basePoint: UhpPoint,
+    onHorPoint: UhpPoint,
+  ): UhpHorocycle {
+    if (basePoint.subType === "infinity") {
+      return {
+        center: this.constants.INFINITY,
+        basePoint,
+        onHorPoint,
+        eucRadius: Infinity,
+      };
+    }
+
+    const eucRadius =
+      ((onHorPoint.re - basePoint.re) ** 2 + onHorPoint.im ** 2) /
+      (2 * onHorPoint.im);
+    const center = this.pointFactory(basePoint.re, eucRadius);
+
+    return {
+      center,
       basePoint,
       onHorPoint,
-      eucRadius: Infinity,
+      eucRadius,
     };
   }
+  //#endregion
 
-  const eucRadius =
-    ((onHorPoint.re - basePoint.re) ** 2 + onHorPoint.im ** 2) /
-    (2 * onHorPoint.im);
-  const center = toUhpInteriorPoint(basePoint.re, eucRadius);
-
-  return {
-    center,
-    basePoint,
-    onHorPoint,
-    eucRadius,
-  };
-};
-//#endregion
-
-// Polygons
-//#region
-export const polygonPerimeter = (sides: UhpGeodesicSegment[]): number =>
-  sides.reduce((perimeter, side) => perimeter + side.length, 0);
-
-export const polygonArea = (angles: number[]): number =>
-  angles.reduce((area, angle) => area - angle, Math.PI * (angles.length - 2));
-
-export const polygonFromVertices = (
-  vertices: UhpPoint[],
-  tolerance: number = TOLERANCE
-): UhpPolygon => {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("Tolerance needs to be positive");
+  // Polygons
+  //#region
+  polygonPerimeter(sides: UhpGeodesicSegment[]): number {
+    return sides.reduce((perimeter, side) => perimeter + side.length, 0);
   }
 
-  const angles: number[] = [];
-  const sides: UhpGeodesicSegment[] = [];
-
-  for (let i = 0; i < vertices.length; i++) {
-    const prevPoint = i === 0 ? vertices[vertices.length - 1] : vertices[i - 1];
-    const point = vertices[i];
-    const nextPoint = i === vertices.length - 1 ? vertices[0] : vertices[i + 1];
-
-    angles.push(angleFromThreePoints(prevPoint, point, nextPoint));
-    sides.push(segmentBetweenPoints(point, nextPoint, tolerance));
+  polygonArea(angles: number[]): number {
+    return angles.reduce(
+      (area, angle) => area - angle,
+      Math.PI * (angles.length - 2),
+    );
   }
 
-  return {
-    vertices,
-    sides,
-    angles,
-    area: polygonArea(angles),
-    perimeter: polygonPerimeter(sides),
-  };
-};
-//#endregion
+  polygonFromVertices(vertices: UhpPoint[]): UhpPolygon {
+    const angles: number[] = [];
+    const sides: UhpGeodesicSegment[] = [];
+
+    for (let i = 0; i < vertices.length; i++) {
+      const prevPoint =
+        i === 0 ? vertices[vertices.length - 1] : vertices[i - 1];
+      const point = vertices[i];
+      const nextPoint =
+        i === vertices.length - 1 ? vertices[0] : vertices[i + 1];
+
+      angles.push(this.angleFromThreePoints(prevPoint, point, nextPoint));
+      sides.push(this.segmentBetweenPoints(point, nextPoint));
+    }
+
+    return {
+      vertices,
+      sides,
+      angles,
+      area: this.polygonArea(angles),
+      perimeter: this.polygonPerimeter(sides),
+    };
+  }
+  //#endregion
+}
