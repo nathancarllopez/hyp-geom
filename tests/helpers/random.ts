@@ -1,37 +1,36 @@
-import { toComplex } from "../../src/general-math/complex-numbers";
+import { ComplexNumber, getComplexNumbers } from "../../src/general-math/complex-numbers";
 import { MobiusTransformation } from "../../src/general-math/mobius-transformations";
-import {
-  ComplexNumber,
-  UhpBoundaryPoint,
-  UhpInteriorPoint,
-} from "../../src/types-validators/types";
-import { toUhpInteriorPoint } from "../../src/upper-half-plane/geometry";
+import { getUhpPoints, UhpPoint } from "../../src/upper-half-plane/points";
 
-export const randomReal = (upperBound: number = 1e5, isPositive: boolean = false): number => {
+export const randomReal = (
+  upperBound: number = 1e5,
+  isPositive: boolean = false,
+): number => {
   let randomPositive: number;
 
   do {
-    randomPositive = Math.random() * upperBound;
-  } while (randomPositive === 0)
-  
-  if (isPositive) return randomPositive;
-  return randomPositive * 2 - upperBound;
-}
+    randomPositive = Math.random() * 2 * upperBound;
+  } while (randomPositive === 0);
 
-export const randomComplex = (upperBound: number = 1e5): ComplexNumber => {
+  if (isPositive) return randomPositive / 2;
+  return randomPositive - upperBound;
+};
+
+export const randomComplex = (upperBound: number = 1e5, tolerance: number = 1e-4): ComplexNumber => {
   const re = randomReal(upperBound);
   const im = randomReal(upperBound);
 
-  return toComplex(re, im);
+  return getComplexNumbers(tolerance).factory(re, im);
 };
 
 export const randomNonZeroComplex = (
   upperBound: number = 1e5,
+  tolerance: number = 1e-4
 ): ComplexNumber => {
   let z: ComplexNumber;
 
   do {
-    z = randomComplex(upperBound);
+    z = randomComplex(upperBound, tolerance);
   } while (z.re === 0 && z.im === 0);
 
   return z;
@@ -39,39 +38,46 @@ export const randomNonZeroComplex = (
 
 export const randomMobius = (
   upperBound: number = 1e5,
-  doReduce: boolean = false
+  tolerance: number = 1e-4,
+  doReduce: boolean = false,
 ): MobiusTransformation => {
-  const a = randomComplex(upperBound);
-  const b = randomComplex(upperBound);
+  const { ZERO } = getComplexNumbers(tolerance).constants;
+
+  const a = randomComplex(upperBound, tolerance);
+  const b = randomComplex(upperBound, tolerance);
   let c: ComplexNumber;
   let d: ComplexNumber;
 
   do {
-    c = randomComplex(upperBound);
-    d = randomComplex(upperBound);
-  } while (c.re === 0 && c.im === 0 && d.re === 0 && d.im === 0);
+    c = randomComplex(upperBound, tolerance);
+    d = randomComplex(upperBound, tolerance);
+  } while (c.isEqualTo(ZERO) && d.isEqualTo(ZERO));
 
-  const result = new MobiusTransformation(a, b, c, d)
+  const result = new MobiusTransformation([a, b, c, d], tolerance);
   if (doReduce) return result.reduce();
   return result;
 };
 
 export const randomUhpBoundaryPoint = (
   upperBound: number = 1e5,
-): UhpBoundaryPoint => {
-  const z = randomComplex(upperBound);
-  return { re: z.re, im: 0 };
+  tolerance: number = 1e-4
+): UhpPoint => {
+  const z = randomComplex(upperBound, tolerance);
+  return getUhpPoints(tolerance).factory(z.re, 0);
 };
 
 export const randomUhpInteriorPoint = (
   upperBound: number = 1e5,
-): UhpInteriorPoint => {
+  tolerance: number = 1e-4
+): UhpPoint => {
   let z: ComplexNumber;
 
   do {
-    z = randomNonZeroComplex(upperBound);
+    z = randomNonZeroComplex(upperBound, tolerance);
   } while (z.im === 0);
 
-  if (z.im < 0) return toUhpInteriorPoint(z.re, -z.im);
-  return toUhpInteriorPoint(z.re, z.im);
+  const { factory } = getUhpPoints(tolerance);
+
+  if (z.im < 0) return factory(z.re, -z.im);
+  return factory(z.re, z.im);
 };
