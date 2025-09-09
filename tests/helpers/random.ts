@@ -1,4 +1,7 @@
-import { ComplexNumber, getComplexNumbers } from "../../src/general-math/complex-numbers";
+import {
+  ComplexNumber,
+  getComplexNumbers,
+} from "../../src/general-math/complex-numbers";
 import { MobiusTransformation } from "../../src/general-math/mobius-transformations";
 import { getUhpPoints, UhpPoint } from "../../src/upper-half-plane/points";
 
@@ -16,7 +19,10 @@ export const randomReal = (
   return randomPositive - upperBound;
 };
 
-export const randomComplex = (upperBound: number = 1e5, tolerance: number = 1e-4): ComplexNumber => {
+export const randomComplex = (
+  upperBound: number = 1e5,
+  tolerance: number = 1e-4,
+): ComplexNumber => {
   const re = randomReal(upperBound);
   const im = randomReal(upperBound);
 
@@ -25,7 +31,7 @@ export const randomComplex = (upperBound: number = 1e5, tolerance: number = 1e-4
 
 export const randomNonZeroComplex = (
   upperBound: number = 1e5,
-  tolerance: number = 1e-4
+  tolerance: number = 1e-4,
 ): ComplexNumber => {
   let z: ComplexNumber;
 
@@ -60,7 +66,7 @@ export const randomMobius = (
 
 export const randomUhpBoundaryPoint = (
   upperBound: number = 1e5,
-  tolerance: number = 1e-4
+  tolerance: number = 1e-4,
 ): UhpPoint => {
   const z = randomComplex(upperBound, tolerance);
   return getUhpPoints(tolerance).factory(z.re, 0);
@@ -68,7 +74,7 @@ export const randomUhpBoundaryPoint = (
 
 export const randomUhpInteriorPoint = (
   upperBound: number = 1e5,
-  tolerance: number = 1e-4
+  tolerance: number = 1e-4,
 ): UhpPoint => {
   let z: ComplexNumber;
 
