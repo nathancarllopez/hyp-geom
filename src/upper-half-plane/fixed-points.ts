@@ -1,5 +1,5 @@
 import { MobiusTransformation } from "../general-math/mobius-transformations.js";
-import { PositiveNumber } from "../util.js";
+import { isPositiveNumber, nearlyEqual } from "../util.js";
 import { getUhpPoints, UhpPoint } from "./points.js";
 import { UhpFixedPoints } from "./types.js";
 
@@ -7,11 +7,16 @@ export function getUhpFixedPoints(
   m: MobiusTransformation,
   identity: MobiusTransformation,
   tr: number,
-  tolerance: PositiveNumber,
+  rtol: number = 1e-5,
+  atol: number = 1e-8
 ): UhpFixedPoints {
+  if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+    throw new Error("Tolerances must be positive");
+  }
+
   if (m.isEqualTo(identity)) return null;
 
-  const { constants, factory } = getUhpPoints(tolerance);
+  const { constants, factory } = getUhpPoints(rtol, atol);
 
   const [a, , c, d] = m.coeffs;
   const cIsZero = c.isEqualTo(constants.ZERO);
@@ -28,7 +33,7 @@ export function getUhpFixedPoints(
     return factory(fPoint.re, fPoint.im);
   };
 
-  const isParabolic = Math.abs(tr ** 2 - 4) < tolerance;
+  const isParabolic = nearlyEqual(tr, 4, rtol, atol);
   if (isParabolic) {
     if (cIsZero) {
       return constants.INFINITY;
@@ -36,7 +41,7 @@ export function getUhpFixedPoints(
 
     const fPoint = fPointFormula();
 
-    if (Math.abs(fPoint.im) < tolerance) {
+    if (nearlyEqual(fPoint.im, 0, rtol, atol)) {
       return factory(fPoint.re, 0);
     }
 
@@ -52,7 +57,9 @@ export function getUhpFixedPoints(
     const fPoints = [fPointFormula(false), fPointFormula()];
 
     if (
-      fPoints.some(({ im }) => Number.isFinite(im) && Math.abs(im) >= tolerance)
+      fPoints.some(
+        ({ im }) => Number.isFinite(im) && !nearlyEqual(im, 0, rtol, atol)
+      )
     ) {
       throw new Error("Fixed points of a hyperbolic should be boundary points");
     }

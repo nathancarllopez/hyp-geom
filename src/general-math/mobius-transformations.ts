@@ -1,66 +1,87 @@
 import { isPositiveNumber } from "../util.js";
 import { ComplexNumber, getComplexNumbers } from "./complex-numbers.js";
 
-export function getMobiusTranformations(tolerance: number = 1e-4): {
+export function getMobiusTranformations(
+  rtol: number = 1e-5,
+  atol: number = 1e-8
+): {
   constants: Record<string, MobiusTransformation>;
   factory: (coeffs: ComplexNumber[]) => MobiusTransformation;
 } {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("The tolerance must be a positive number");
+  if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+    throw new Error("Tolerances must be positive");
   }
 
   const {
     constants: { ZERO, ONE, I, NEGI },
-  } = getComplexNumbers(tolerance);
+  } = getComplexNumbers(rtol, atol);
 
   return {
     constants: {
-      IDENTITY: new MobiusTransformation([ONE, ZERO, ZERO, ONE], tolerance),
-      CAYLEY: new MobiusTransformation([ONE, NEGI, ONE, I], tolerance).reduce(),
+      IDENTITY: new MobiusTransformation([ONE, ZERO, ZERO, ONE], rtol, atol),
+      CAYLEY: new MobiusTransformation(
+        [ONE, NEGI, ONE, I],
+        rtol,
+        atol
+      ).reduce(),
     },
     factory: (coeffs: ComplexNumber[]): MobiusTransformation => {
-      return new MobiusTransformation(coeffs, tolerance);
+      return new MobiusTransformation(coeffs, rtol, atol);
     },
   };
 }
 
 export class MobiusTransformation {
-  public _tolerance: number;
-  readonly coeffs: ComplexNumber[];
   private constants: Record<string, ComplexNumber>;
+  readonly coeffs: ComplexNumber[];
+  public _rtol: number;
+  public _atol: number;
 
-  constructor(coeffs: ComplexNumber[], tolerance: number = 1e-4) {
-    if (!isPositiveNumber(tolerance)) {
-      throw new Error("The tolerance must be a positive number");
+  constructor(
+    coeffs: ComplexNumber[],
+    rtol: number = 1e-5,
+    atol: number = 1e-8
+  ) {
+    if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+      throw new Error("Tolerances must be positive");
     }
 
     if (coeffs.length !== 4) {
       throw new Error(
-        "Must provide exactly four complex numbers as coefficients",
+        "Must provide exactly four complex numbers as coefficients"
       );
     }
 
-    const { constants } = getComplexNumbers(tolerance);
+    const { constants } = getComplexNumbers(rtol, atol);
     const [, , c, d] = coeffs;
 
     if (c.isEqualTo(constants.ZERO) && d.isEqualTo(constants.ZERO)) {
       throw new Error("Denominator of mobius transformation cannot be zero");
     }
 
-    this._tolerance = tolerance;
-    this.coeffs = coeffs;
     this.constants = constants;
+    this.coeffs = coeffs;
+    this._rtol = rtol;
+    this._atol = atol;
   }
 
-  get tolerance() {
-    return this._tolerance;
+  get rtol() {
+    return this._rtol;
   }
-
-  set tolerance(newTolerance: number) {
-    if (!isPositiveNumber(newTolerance)) {
-      throw new Error("Tolerance must be positive");
+  get atol() {
+    return this._atol;
+  }
+  set rtol(newRtol: number) {
+    if (!isPositiveNumber(newRtol)) {
+      throw new Error("Relative tolerance must be positive");
     }
-    this._tolerance = newTolerance;
+    this._rtol = newRtol;
+  }
+  set atol(newAtol: number) {
+    if (!isPositiveNumber(newAtol)) {
+      throw new Error("Relative tolerance must be positive");
+    }
+    this._atol = newAtol;
   }
 
   // A Mobius transformation is determined by where it sends three points
@@ -92,12 +113,12 @@ export class MobiusTransformation {
     const sqrtDet = det.nthRoot();
     const reducedCoeffs = this.coeffs.map((coeff) => coeff.divide(sqrtDet));
 
-    return new MobiusTransformation(reducedCoeffs, this._tolerance);
+    return new MobiusTransformation(reducedCoeffs, this._rtol, this._atol);
   }
 
   compose(
     n: MobiusTransformation,
-    doReduce: boolean = false,
+    doReduce: boolean = false
   ): MobiusTransformation {
     const [a, b, c, d] = this.coeffs;
     const [nA, nB, nC, nD] = n.coeffs;
@@ -109,7 +130,8 @@ export class MobiusTransformation {
 
     const composition = new MobiusTransformation(
       [composedA, composedB, composedC, composedD],
-      this._tolerance,
+      this._rtol,
+      this._atol
     );
 
     if (doReduce) return composition.reduce();
@@ -118,7 +140,7 @@ export class MobiusTransformation {
 
   conjugate(
     n: MobiusTransformation,
-    doReduce: boolean = false,
+    doReduce: boolean = false
   ): MobiusTransformation {
     const det = n.determinant();
     if (det.isEqualTo(this.constants.ZERO)) {
@@ -151,7 +173,8 @@ export class MobiusTransformation {
     const [a, b, c, d] = this.coeffs;
     const inv = new MobiusTransformation(
       [d, b.scale(-1), c.scale(-1), a],
-      this._tolerance,
+      this._rtol,
+      this._atol
     );
 
     if (doReduce) return inv.reduce();

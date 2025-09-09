@@ -2,13 +2,16 @@ import { getComplexNumbers } from "../general-math/complex-numbers.js";
 import { UhpGeometry } from "./geometry.js";
 import { getUhpPoints } from "./points.js";
 
-export function initializeUhpPrivateFields(tolerance: number) {
-  const { factory: uhpFactory } = getUhpPoints(tolerance);
-  const { factory: complexFactory } = getComplexNumbers(tolerance);
+export function initializeUhpPrivateFields(
+  rtol: number = 1e-5,
+  atol: number = 1e-8
+) {
+  const { factory: uhpFactory } = getUhpPoints(rtol, atol);
+  const { factory: complexFactory } = getComplexNumbers(rtol, atol);
 
   return {
     uhpFactory,
     complexFactory,
-    geometry: new UhpGeometry(tolerance),
+    geometry: new UhpGeometry(rtol, atol),
   };
 }

@@ -1,4 +1,4 @@
-import { isPositiveNumber } from "../util.js";
+import { isPositiveNumber, nearlyEqual } from "../util.js";
 
 interface ComplexNumberInterface {
   re: number;
@@ -7,25 +7,28 @@ interface ComplexNumberInterface {
   argument: number | null; // Is null when complex number is infinity
 }
 
-export function getComplexNumbers(tolerance: number = 1e-4): {
+export function getComplexNumbers(
+  rtol: number = 1e-5,
+  atol: number = 1e-8
+): {
   constants: Record<string, ComplexNumber>;
   factory: (re: number, im: number) => ComplexNumber;
 } {
-  if (!isPositiveNumber(tolerance)) {
-    throw new Error("The tolerance must be a positive number");
+  if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+    throw new Error("Tolerances must be positive");
   }
 
   return {
     constants: {
-      ZERO: new ComplexNumber(0, 0, tolerance),
-      ONE: new ComplexNumber(1, 0, tolerance),
-      NEGONE: new ComplexNumber(-1, 0, tolerance),
-      I: new ComplexNumber(0, 1, tolerance),
-      NEGI: new ComplexNumber(0, -1, tolerance),
-      INFINITY: new ComplexNumber(Infinity, Infinity, tolerance),
+      ZERO: new ComplexNumber(0, 0, rtol, atol),
+      ONE: new ComplexNumber(1, 0, rtol, atol),
+      NEGONE: new ComplexNumber(-1, 0, rtol, atol),
+      I: new ComplexNumber(0, 1, rtol, atol),
+      NEGI: new ComplexNumber(0, -1, rtol, atol),
+      INFINITY: new ComplexNumber(Infinity, Infinity, rtol, atol),
     },
     factory: (re: number, im: number): ComplexNumber => {
-      return new ComplexNumber(re, im, tolerance);
+      return new ComplexNumber(re, im, rtol, atol);
     },
   };
 }
@@ -35,11 +38,17 @@ export class ComplexNumber implements ComplexNumberInterface {
   readonly im: number;
   readonly modulus: number;
   readonly argument: number | null;
-  public _tolerance: number;
+  public _rtol: number;
+  public _atol: number;
 
-  constructor(re: number = 0, im: number = 0, tolerance: number = 1e-4) {
-    if (!isPositiveNumber(tolerance)) {
-      throw new Error("The tolerance must be a positive number");
+  constructor(
+    re: number = 0,
+    im: number = 0,
+    rtol: number = 1e-5,
+    atol: number = 1e-8
+  ) {
+    if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+      throw new Error("Tolerances must be positive");
     }
 
     const infiniteInputs = re === Infinity || im === Infinity;
@@ -55,18 +64,27 @@ export class ComplexNumber implements ComplexNumberInterface {
     this.im = im;
     this.modulus = Math.hypot(re, im);
     this.argument = infiniteInputs ? null : Math.atan2(im, re);
-    this._tolerance = tolerance;
+    this._rtol = rtol;
+    this._atol = atol;
   }
 
-  get tolerance() {
-    return this._tolerance;
+  get rtol() {
+    return this._rtol;
   }
-
-  set tolerance(newTolerance: number) {
-    if (!isPositiveNumber(newTolerance)) {
-      throw new Error("Tolerance must be positive");
+  get atol() {
+    return this._atol;
+  }
+  set rtol(newRtol: number) {
+    if (!isPositiveNumber(newRtol)) {
+      throw new Error("Relative tolerance must be positive");
     }
-    this._tolerance = newTolerance;
+    this._rtol = newRtol;
+  }
+  set atol(newAtol: number) {
+    if (!isPositiveNumber(newAtol)) {
+      throw new Error("Relative tolerance must be positive");
+    }
+    this._atol = newAtol;
   }
 
   isEqualTo(w: ComplexNumber): boolean {
@@ -75,8 +93,8 @@ export class ComplexNumber implements ComplexNumberInterface {
     }
 
     return (
-      Math.abs(this.re - w.re) < this._tolerance &&
-      Math.abs(this.im - w.im) < this._tolerance
+      nearlyEqual(this.re, w.re, this._rtol, this._atol) &&
+      nearlyEqual(this.im, w.im, this._rtol, this._atol)
     );
   }
 
@@ -104,7 +122,10 @@ export class ComplexNumber implements ComplexNumberInterface {
   }
 
   inverse(): ComplexNumber {
-    if (this.re < this._tolerance && this.im < this._tolerance) {
+    if (
+      nearlyEqual(this.re, 0, this._rtol, this._atol) &&
+      nearlyEqual(this.im, 0, this._rtol, this._atol)
+    ) {
       throw new Error("Zero has no inverse.");
     }
 
@@ -112,7 +133,10 @@ export class ComplexNumber implements ComplexNumberInterface {
   }
 
   divide(w: ComplexNumber): ComplexNumber {
-    if (w.re < this._tolerance && w.im < this._tolerance) {
+    if (
+      nearlyEqual(w.re, 0, this._rtol, this._atol) &&
+      nearlyEqual(w.im, 0, this._rtol, this._atol)
+    ) {
       throw new Error("Cannot divide by zero.");
     }
 
@@ -139,14 +163,16 @@ export class ComplexNumber implements ComplexNumberInterface {
       throw new Error("Cannot take a root of infinity");
     }
 
-    if (n === 0) return new ComplexNumber(1, 0, this._tolerance);
+    if (n === 0) return new ComplexNumber(1, 0, this._rtol, this._atol);
 
     const rootModulus = Math.pow(this.modulus, 1 / n);
     const rootArg = this.argument / n;
 
     return new ComplexNumber(
       rootModulus * Math.cos(rootArg),
-      rootModulus * Math.sin(rootArg)
+      rootModulus * Math.sin(rootArg),
+      this._rtol,
+      this._atol
     );
   }
 }

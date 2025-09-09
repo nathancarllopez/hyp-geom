@@ -3,7 +3,7 @@ import {
   getMobiusTranformations,
   MobiusTransformation,
 } from "../general-math/mobius-transformations.js";
-import { isPositiveNumber } from "../util.js";
+import { anglesEquivalent, isPositiveNumber, nearlyEqual } from "../util.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,
@@ -34,21 +34,28 @@ export class UhpIsometry extends MobiusTransformation {
   readonly axisOfTranslation?: UhpGeodesic;
   readonly angleOfRotation?: number;
   readonly displacement?: number;
-  public _tolerance: number;
+  public _rtol: number;
+  public _atol: number;
 
-  constructor(coeffs: ComplexNumber[] | null, tolerance: number = 1e-4) {
-    if (!isPositiveNumber(tolerance)) {
-      throw new Error("The tolerance must be a positive number");
+  constructor(
+    coeffs: ComplexNumber[] | null,
+    rtol: number = 1e-5,
+    atol: number = 1e-8
+  ) {
+    if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
+      throw new Error("Tolerances must be positive");
     }
 
-    const { constants: uhpConstants, factory: uhpFactory } =
-      getUhpPoints(tolerance);
-    const { constants: mobiusConstants } = getMobiusTranformations(tolerance);
+    const { constants: uhpConstants, factory: uhpFactory } = getUhpPoints(
+      rtol,
+      atol
+    );
+    const { constants: mobiusConstants } = getMobiusTranformations(rtol, atol);
 
     if (coeffs === null) {
       const identity = mobiusConstants.IDENTITY;
 
-      super(identity.coeffs, tolerance);
+      super(identity.coeffs, rtol, atol);
 
       this.mobius = identity;
       this.det = 1;
@@ -57,7 +64,8 @@ export class UhpIsometry extends MobiusTransformation {
       this.uhpConstants = uhpConstants;
       this.uhpFactory = uhpFactory;
       this.fixedPoints = null;
-      this._tolerance = tolerance;
+      this._rtol = rtol;
+      this._atol = atol;
       this.type = "identity";
       this.standardForm = this;
       this.conjToStd = null;
@@ -65,14 +73,14 @@ export class UhpIsometry extends MobiusTransformation {
       return;
     }
 
-    const mobius = new MobiusTransformation(coeffs, tolerance).reduce();
+    const mobius = new MobiusTransformation(coeffs, rtol, atol).reduce();
     const det = mobius.determinant();
-    const complexOne = new ComplexNumber(1, 0, tolerance);
+    const complexOne = new ComplexNumber(1, 0, rtol, atol);
 
     if (!det.isEqualTo(complexOne)) {
       console.log("transformation:", mobius.coeffs);
       console.log("determinant:", det);
-      console.log("tolerance:", tolerance);
+      console.log("tolerance:", rtol, atol);
 
       throw new Error("Determinant of an isometry should be one");
     }
@@ -80,19 +88,20 @@ export class UhpIsometry extends MobiusTransformation {
     const [a, , , d] = mobius.coeffs;
     const tr = a.add(d);
 
-    if (Math.abs(tr.im) >= tolerance) {
+    if (!nearlyEqual(tr.im, 0, rtol, atol)) {
       console.log("transformation:", mobius.coeffs);
       console.log("trace:", tr);
-      console.log("tolerance:", tolerance);
+      console.log("tolerance:", rtol, atol);
 
       throw new Error("Trace of an isometry should be a real number");
     }
 
-    super(mobius.coeffs, tolerance);
+    super(mobius.coeffs, rtol, atol);
     this.mobius = mobius;
     this.det = det.re;
     this.tr = tr.re;
-    this._tolerance = tolerance;
+    this._rtol = rtol;
+    this._atol = atol;
 
     this.mobiusConstants = mobiusConstants;
     this.uhpConstants = uhpConstants;
@@ -102,13 +111,14 @@ export class UhpIsometry extends MobiusTransformation {
       mobius,
       this.mobiusConstants.IDENTITY,
       tr.re,
-      tolerance,
+      rtol,
+      atol
     );
     this.fixedPoints = fixedPoints;
 
     const { geodesicThroughPoints, distance, angleFromThreePoints } =
-      new UhpGeometry(tolerance);
-    const uhpIdentity = new UhpIsometry(null, tolerance);
+      new UhpGeometry(rtol, atol);
+    const uhpIdentity = new UhpIsometry(null, rtol, atol);
 
     // Identity transformation
     if (fixedPoints === null) {
@@ -141,13 +151,15 @@ export class UhpIsometry extends MobiusTransformation {
         this.standardForm = standardHyperbolic(
           translationLength,
           uhpFactory,
-          tolerance,
+          rtol,
+          atol
         );
         this.conjToStd = moveGeodesicToImAxis(
           fPoint0,
           fPoint1,
           uhpFactory,
-          tolerance,
+          rtol,
+          atol
         );
       }
     }
@@ -159,13 +171,13 @@ export class UhpIsometry extends MobiusTransformation {
       const centerOfRotation = fixedPoints;
       const intPoint = this.uhpFactory(
         centerOfRotation.re,
-        centerOfRotation.im + 1,
+        centerOfRotation.im + 1
       );
       const imageOfIntPoint = this.apply(intPoint);
       const angleOfRotation = angleFromThreePoints(
         intPoint,
         centerOfRotation,
-        imageOfIntPoint,
+        imageOfIntPoint
       );
 
       this.angleOfRotation = angleOfRotation;
@@ -177,9 +189,10 @@ export class UhpIsometry extends MobiusTransformation {
         this.standardForm = standardElliptic(
           angleOfRotation,
           uhpFactory,
-          tolerance,
+          rtol,
+          atol
         );
-        this.conjToStd = movePointToI(centerOfRotation, uhpFactory, tolerance);
+        this.conjToStd = movePointToI(centerOfRotation, uhpFactory, rtol, atol);
       }
     }
 
@@ -191,7 +204,7 @@ export class UhpIsometry extends MobiusTransformation {
       if (base.isEqualTo(uhpConstants.INFINITY)) {
         const secondCoeff = this.coeffs[1];
 
-        if (Math.abs(secondCoeff.im) >= tolerance) {
+        if (!nearlyEqual(secondCoeff.im, 0, rtol, atol)) {
           throw new Error("Parabolic displacement should be a real number");
         }
 
@@ -203,19 +216,21 @@ export class UhpIsometry extends MobiusTransformation {
           base,
           uhpIdentity,
           uhpFactory,
-          tolerance,
+          rtol,
+          atol
         );
         const thisInStandard = this.conjugate(conjToStd);
         const secondCoeff = thisInStandard.coeffs[1];
 
-        if (Math.abs(secondCoeff.im) >= tolerance) {
+        if (!nearlyEqual(secondCoeff.im, 0, rtol, atol)) {
           throw new Error("Parabolic displacement should be a real number");
         }
 
         this.standardForm = standardParabolic(
           secondCoeff.re,
           uhpFactory,
-          tolerance,
+          rtol,
+          atol
         );
         this.conjToStd = conjToStd;
         this.displacement = secondCoeff.re;
@@ -223,30 +238,38 @@ export class UhpIsometry extends MobiusTransformation {
     }
   }
 
-  get tolerance() {
-    return this._tolerance;
+  get rtol() {
+    return this._rtol;
   }
-
-  set tolerance(newTolerance: number) {
-    if (!isPositiveNumber(newTolerance)) {
-      throw new Error("Tolerance must be positive");
+  get atol() {
+    return this._atol;
+  }
+  set rtol(newRtol: number) {
+    if (!isPositiveNumber(newRtol)) {
+      throw new Error("Relative tolerance must be positive");
     }
-    this._tolerance = newTolerance;
+    this._rtol = newRtol;
+  }
+  set atol(newAtol: number) {
+    if (!isPositiveNumber(newAtol)) {
+      throw new Error("Relative tolerance must be positive");
+    }
+    this._atol = newAtol;
   }
 
   compose(n: UhpIsometry): UhpIsometry {
     const composition = super.compose(n.mobius);
-    return new UhpIsometry(composition.coeffs);
+    return new UhpIsometry(composition.coeffs, this._rtol, this._atol);
   }
 
   conjugate(n: UhpIsometry): UhpIsometry {
     const conj = super.conjugate(n.mobius);
-    return new UhpIsometry(conj.coeffs);
+    return new UhpIsometry(conj.coeffs, this._rtol, this._atol);
   }
 
   inverse(): UhpIsometry {
     const mobInverse = super.inverse();
-    return new UhpIsometry(mobInverse.coeffs);
+    return new UhpIsometry(mobInverse.coeffs, this._rtol, this._atol);
   }
 
   apply(z: UhpPoint): UhpPoint {
@@ -275,12 +298,12 @@ export class UhpIsometry extends MobiusTransformation {
 
     const type = type1;
     if (type === "identity") {
-      return new UhpIsometry(null, this._tolerance);
+      return new UhpIsometry(null, this._rtol, this._atol);
     }
 
     if (conjugation1 === null || conjugation2 === null) {
       throw new Error(
-        "Non trivial isometries should not have a null conjugation matrix",
+        "Non trivial isometries should not have a null conjugation matrix"
       );
     }
 
@@ -291,29 +314,30 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (disp1 === undefined || disp2 === undefined) {
           throw new Error(
-            "Parabolic isometries should have a parabolic displacement",
+            "Parabolic isometries should have a parabolic displacement"
           );
         }
 
         if (
-          Math.abs(disp1) < this._tolerance ||
-          Math.abs(disp2) < this._tolerance
+          nearlyEqual(disp1, 0, this._rtol, this._atol) ||
+          nearlyEqual(disp2, 0, this._rtol, this._atol)
         ) {
           throw new Error("Identity transformation classified as parabolic");
         }
 
         // Displacements need to have the same sign for the conjugation matrix to be definable
-        if (disp1 * disp2 < 0) {
+        if ((disp1 > 0 && disp2 < 0) || (disp1 < 0 && disp2 > 0)) {
           return null;
         }
 
         const conjugateBetweenStandardForms = standardHyperbolic(
           Math.log(disp1 / disp2),
           this.uhpFactory,
-          this._tolerance,
+          this._rtol,
+          this._atol
         );
         const conjugation = conjugation1.compose(
-          conjugateBetweenStandardForms.compose(conjugation2.inverse()),
+          conjugateBetweenStandardForms.compose(conjugation2.inverse())
         );
 
         return conjugation;
@@ -325,24 +349,25 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (tLength1 === undefined || tLength2 === undefined) {
           throw new Error(
-            "Hyperbolic isometries should have a translation length",
+            "Hyperbolic isometries should have a translation length"
           );
         }
 
-        if (Math.abs(tLength1 - tLength2) < this._tolerance) {
+        if (nearlyEqual(tLength1, tLength2, this._rtol, this._atol)) {
           return conjugation1.compose(conjugation2.inverse());
         }
 
-        if (Math.abs(tLength1 + tLength2) < this._tolerance) {
-          const identity = new UhpIsometry(null, this._tolerance);
+        if (nearlyEqual(tLength1, -tLength2, this._rtol, this._atol)) {
+          const identity = new UhpIsometry(null, this._rtol, this._atol);
           const swapZeroAndInfinity = movePointToInfinity(
             this.uhpConstants.ZERO,
             identity,
             this.uhpFactory,
-            this._tolerance,
+            this._rtol,
+            this._atol
           );
           const conjugation = conjugation1.compose(
-            swapZeroAndInfinity.compose(conjugation2.inverse()),
+            swapZeroAndInfinity.compose(conjugation2.inverse())
           );
 
           return conjugation;
@@ -357,11 +382,11 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (angle1 === undefined || angle2 === undefined) {
           throw new Error(
-            "Elliptic isometries should have an angle of rotation",
+            "Elliptic isometries should have an angle of rotation"
           );
         }
 
-        if (Math.abs(angle1 - angle2) % (2 * Math.PI) < this._tolerance) {
+        if (anglesEquivalent(angle1, angle2, this._atol)) {
           return conjugation1.compose(conjugation2.inverse());
         }
 
