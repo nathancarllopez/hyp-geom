@@ -1,4 +1,4 @@
-import { isPositiveNumber } from "../util";
+import { isPositiveNumber } from "../util.js";
 
 interface ComplexNumberInterface {
   re: number;
@@ -46,7 +46,7 @@ export class ComplexNumber implements ComplexNumberInterface {
     if (infiniteInputs) {
       if (!(re === Infinity && im === Infinity)) {
         throw new Error(
-          "If one of the real or imaginary part is infinite, the other must be as well",
+          "If one of the real or imaginary part is infinite, the other must be as well"
         );
       }
     }
@@ -67,17 +67,6 @@ export class ComplexNumber implements ComplexNumberInterface {
       throw new Error("Tolerance must be positive");
     }
     this._tolerance = newTolerance;
-  }
-
-  static ZERO: ComplexNumber = new ComplexNumber();
-  static ONE: ComplexNumber = new ComplexNumber(1, 0);
-  static NEGONE: ComplexNumber = new ComplexNumber(-1, 0);
-  static I: ComplexNumber = new ComplexNumber(0, 1);
-  static NEGI: ComplexNumber = new ComplexNumber(0, -1);
-  static INFINITY: ComplexNumber = new ComplexNumber(Infinity, Infinity);
-
-  static UNITCIRCLE(theta: number): ComplexNumber {
-    return new ComplexNumber(Math.cos(theta), Math.sin(theta));
   }
 
   isEqualTo(w: ComplexNumber): boolean {
@@ -110,12 +99,12 @@ export class ComplexNumber implements ComplexNumberInterface {
   multiply(w: ComplexNumber): ComplexNumber {
     return new ComplexNumber(
       this.re * w.re - this.im * w.im,
-      this.re * w.im + this.im * w.re,
+      this.re * w.im + this.im * w.re
     );
   }
 
   inverse(): ComplexNumber {
-    if (this.isEqualTo(ComplexNumber.ZERO)) {
+    if (this.re < this._tolerance && this.im < this._tolerance) {
       throw new Error("Zero has no inverse.");
     }
 
@@ -123,7 +112,7 @@ export class ComplexNumber implements ComplexNumberInterface {
   }
 
   divide(w: ComplexNumber): ComplexNumber {
-    if (w.isEqualTo(ComplexNumber.ZERO)) {
+    if (w.re < this._tolerance && w.im < this._tolerance) {
       throw new Error("Cannot divide by zero.");
     }
 
@@ -150,12 +139,14 @@ export class ComplexNumber implements ComplexNumberInterface {
       throw new Error("Cannot take a root of infinity");
     }
 
-    if (n === 0) return ComplexNumber.ONE;
+    if (n === 0) return new ComplexNumber(1, 0, this._tolerance);
 
     const rootModulus = Math.pow(this.modulus, 1 / n);
     const rootArg = this.argument / n;
 
-    const onUnitCircle = ComplexNumber.UNITCIRCLE(rootArg);
-    return onUnitCircle.scale(rootModulus);
+    return new ComplexNumber(
+      rootModulus * Math.cos(rootArg),
+      rootModulus * Math.sin(rootArg)
+    );
   }
 }
