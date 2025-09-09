@@ -13,4 +13,16 @@ export const nearlyEqual = (
   b: number,
   rtol: number = 1e-5,
   atol: number = 1e-8
-) => Math.abs(a - b) <= atol + rtol * Math.max(Math.abs(a), Math.abs(b));
+): boolean =>
+  Math.abs(a - b) <= atol + rtol * Math.max(Math.abs(a), Math.abs(b));
+
+export const anglesEquivalent = (
+  a: number,
+  b: number,
+  atol: number = 1e-8
+): boolean => {
+  let diff = a - b;
+  diff = ((diff + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+  return Math.abs(diff) < atol;
+};
