@@ -1,9 +1,3 @@
-import { describe, it } from "vitest";
-
-describe("Class constructor", () => {
-  it("Accepts valid inputs", () => {})
-});
-
 // import { describe, expect, it } from "vitest";
 // import {
 //   I,
