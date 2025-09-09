@@ -1,13 +1,13 @@
-import { ComplexNumber } from "../general-math/complex-numbers";
-import { isPositiveNumber } from "../util";
-import { getUhpPoints, UhpPoint } from "./points";
+import { ComplexNumber } from "../general-math/complex-numbers.js";
+import { isPositiveNumber } from "../util.js";
+import { getUhpPoints, UhpPoint } from "./points.js";
 import {
   UhpCircle,
   UhpGeodesic,
   UhpGeodesicSegment,
   UhpHorocycle,
   UhpPolygon,
-} from "./types";
+} from "./types.js";
 
 export class UhpGeometry {
   // Fields and Constructor
@@ -371,7 +371,7 @@ export class UhpGeometry {
     base: UhpPoint,
     direction: ComplexNumber,
   ): UhpGeodesic {
-    if (direction.isEqualTo(ComplexNumber.INFINITY)) {
+    if (direction.re === Infinity && direction.im === Infinity) {
       throw new Error("The point at infinity is not a valid direction vector");
     }
 

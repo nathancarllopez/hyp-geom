@@ -1,7 +1,7 @@
-import { ComplexNumber } from "../general-math/complex-numbers";
-import { UhpGeometry } from "./geometry";
-import { UhpIsometry } from "./isometries";
-import { UhpPoint } from "./points";
+import { ComplexNumber } from "../general-math/complex-numbers.js";
+import { UhpGeometry } from "./geometry.js";
+import { UhpIsometry } from "./isometries.js";
+import { UhpPoint } from "./points.js";
 
 export function moveGeodesicToImAxis(
   base: UhpPoint,

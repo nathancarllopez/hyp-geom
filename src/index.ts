@@ -1,28 +1,25 @@
-import { ComplexNumber } from "./general-math/complex-numbers";
+import { ComplexNumber } from "./general-math/complex-numbers.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,
   movePointToInfinity,
-} from "./upper-half-plane/conjugations";
-import { UhpGeometry } from "./upper-half-plane/geometry";
-import { UhpIsometry } from "./upper-half-plane/isometries";
-import { UhpPoint } from "./upper-half-plane/points";
+} from "./upper-half-plane/conjugations.js";
+import { UhpGeometry } from "./upper-half-plane/geometry.js";
+import { initializeUhpPrivateFields } from "./upper-half-plane/initializeUhpPrivateFields.js";
+import { UhpIsometry } from "./upper-half-plane/isometries.js";
+import { UhpPoint } from "./upper-half-plane/points.js";
 import {
   standardElliptic,
   standardHyperbolic,
   standardParabolic,
-} from "./upper-half-plane/standard-isometries";
+} from "./upper-half-plane/standard-isometries.js";
 import {
   UhpCircle,
   UhpGeodesic,
   UhpHorocycle,
   UhpPolygon,
-} from "./upper-half-plane/types";
-import {
-  initializeUhpPrivateFields,
-  isPointArray,
-  isPositiveNumber,
-} from "./util";
+} from "./upper-half-plane/types.js";
+import { isPointArray, isPositiveNumber } from "./util.js";
 
 export class UpperHalfPlane {
   public _tolerance: number;

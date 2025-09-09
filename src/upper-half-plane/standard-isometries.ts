@@ -1,5 +1,5 @@
-import { UhpIsometry } from "./isometries";
-import { UhpPoint } from "./points";
+import { UhpIsometry } from "./isometries.js";
+import { UhpPoint } from "./points.js";
 
 export function standardHyperbolic(
   distance: number,

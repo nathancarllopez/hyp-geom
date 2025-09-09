@@ -1,7 +1,7 @@
-import { MobiusTransformation } from "../general-math/mobius-transformations";
-import { PositiveNumber } from "../util";
-import { getUhpPoints, UhpPoint } from "./points";
-import { UhpFixedPoints } from "./types";
+import { MobiusTransformation } from "../general-math/mobius-transformations.js";
+import { PositiveNumber } from "../util.js";
+import { getUhpPoints, UhpPoint } from "./points.js";
+import { UhpFixedPoints } from "./types.js";
 
 export function getUhpFixedPoints(
   m: MobiusTransformation,

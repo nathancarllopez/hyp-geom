@@ -1,5 +1,5 @@
-import { ComplexNumber } from "../general-math/complex-numbers";
-import { isPositiveNumber } from "../util";
+import { ComplexNumber } from "../general-math/complex-numbers.js";
+import { isPositiveNumber } from "../util.js";
 
 export function getUhpPoints(tolerance: number = 1e-4): {
   constants: Record<string, UhpPoint>;
@@ -44,9 +44,7 @@ export class UhpPoint extends ComplexNumber {
     } else {
       this.type = "boundary";
       this.subType =
-        re === Infinity && im === Infinity
-          ? "infinity"
-          : "on-real-line";
+        re === Infinity && im === Infinity ? "infinity" : "on-real-line";
     }
   }
 }

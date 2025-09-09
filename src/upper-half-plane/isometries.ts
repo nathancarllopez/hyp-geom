@@ -1,23 +1,23 @@
-import { ComplexNumber } from "../general-math/complex-numbers";
+import { ComplexNumber } from "../general-math/complex-numbers.js";
 import {
   getMobiusTranformations,
   MobiusTransformation,
-} from "../general-math/mobius-transformations";
-import { isPositiveNumber } from "../util";
+} from "../general-math/mobius-transformations.js";
+import { isPositiveNumber } from "../util.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,
   movePointToInfinity,
-} from "./conjugations";
-import { getUhpFixedPoints } from "./fixed-points";
-import { UhpGeometry } from "./geometry";
-import { getUhpPoints, UhpPoint } from "./points";
+} from "./conjugations.js";
+import { getUhpFixedPoints } from "./fixed-points.js";
+import { UhpGeometry } from "./geometry.js";
+import { getUhpPoints, UhpPoint } from "./points.js";
 import {
   standardElliptic,
   standardHyperbolic,
   standardParabolic,
-} from "./standard-isometries";
-import { UhpFixedPoints, UhpGeodesic } from "./types";
+} from "./standard-isometries.js";
+import { UhpFixedPoints, UhpGeodesic } from "./types.js";
 
 export class UhpIsometry extends MobiusTransformation {
   private mobiusConstants: Record<string, MobiusTransformation>;

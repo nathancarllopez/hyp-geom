@@ -1,5 +1,5 @@
-import { isPositiveNumber } from "../util";
-import { ComplexNumber, getComplexNumbers } from "./complex-numbers";
+import { isPositiveNumber } from "../util.js";
+import { ComplexNumber, getComplexNumbers } from "./complex-numbers.js";
 
 export function getMobiusTranformations(tolerance: number = 1e-4): {
   constants: Record<string, MobiusTransformation>;
