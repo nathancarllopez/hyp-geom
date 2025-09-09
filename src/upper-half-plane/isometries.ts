@@ -1,84 +1,226 @@
+import { ComplexNumber } from "../general-math/complex-numbers";
 import {
-  add,
-  argument,
-  divide,
-  isEqualTo,
-  nthRoot,
-  scale,
-  subtract,
-  toComplex,
-} from "../general-math/complex-numbers";
-import { MobiusTransformation } from "../general-math/mobius-transformations";
+  getMobiusTranformations,
+  MobiusTransformation,
+} from "../general-math/mobius-transformations";
+import { isPositiveNumber } from "../util";
 import {
-  ComplexNumber,
-  UhpBoundaryPoint,
-  UhpConjugateInfo,
-  UhpInteriorPoint,
-  UhpIsometryInfo,
-  UhpPoint,
-} from "../types-validators/types";
+  moveGeodesicToImAxis,
+  movePointToI,
+  movePointToInfinity,
+} from "./conjugations";
+import { getUhpFixedPoints } from "./fixed-points";
+import { UhpGeometry } from "./geometry";
+import { getUhpPoints, UhpPoint } from "./points";
 import {
-  isPointAtInfinity,
-  isPositiveNumber,
-  isUhpInteriorPoint,
-} from "../types-validators/validators";
-import {
-  angleFromThreePoints,
-  geodesicThroughPoints,
-  I,
-  NEGONE,
-  ONE,
-  toUhpBoundaryPoint,
-  toUhpInteriorPoint,
-  toUhpPoint,
-  uhpDistance,
-  UhpINFINITY,
-  ZERO,
-} from "./geometry";
+  standardElliptic,
+  standardHyperbolic,
+  standardParabolic,
+} from "./standard-isometries";
+import { UhpFixedPoints, UhpGeodesic } from "./types";
 
 export class UhpIsometry extends MobiusTransformation {
-  readonly _mobius: MobiusTransformation;
-  readonly _det: number;
+  private mobiusConstants: Record<string, MobiusTransformation>;
+  private uhpConstants: Record<string, UhpPoint>;
+  private uhpFactory: (re: number, im: number) => UhpPoint;
+  readonly mobius: MobiusTransformation;
+  readonly det: number;
+  readonly tr: number;
+  readonly type: "hyperbolic" | "elliptic" | "parabolic" | "identity";
+  readonly fixedPoints: UhpFixedPoints;
+  readonly standardForm: UhpIsometry;
+  readonly conjToStd: UhpIsometry | null; // is null when isometry is the identity to prevent infinite recursion in constructor
+  readonly translationLength?: number;
+  readonly axisOfTranslation?: UhpGeodesic;
+  readonly angleOfRotation?: number;
+  readonly displacement?: number;
   public _tolerance: number;
 
-  constructor(
-    a: ComplexNumber = ONE,
-    b: ComplexNumber = ZERO,
-    c: ComplexNumber = ZERO,
-    d: ComplexNumber = ONE,
-    tolerance: number = 1e-4
-  ) {
-    const mobius = new MobiusTransformation(a, b, c, d);
+  constructor(coeffs: ComplexNumber[] | null, tolerance: number = 1e-4) {
+    if (!isPositiveNumber(tolerance)) {
+      throw new Error("The tolerance must be a positive number");
+    }
+
+    const { constants: uhpConstants, factory: uhpFactory } =
+      getUhpPoints(tolerance);
+    const { constants: mobiusConstants } = getMobiusTranformations(tolerance);
+
+    if (coeffs === null) {
+      const identity = mobiusConstants.IDENTITY;
+
+      super(identity.coeffs, tolerance);
+
+      this.mobius = identity;
+      this.det = 1;
+      this.tr = 2;
+      this.mobiusConstants = mobiusConstants;
+      this.uhpConstants = uhpConstants;
+      this.uhpFactory = uhpFactory;
+      this.fixedPoints = null;
+      this._tolerance = tolerance;
+      this.type = "identity";
+      this.standardForm = this;
+      this.conjToStd = null;
+
+      return;
+    }
+
+    const mobius = new MobiusTransformation(coeffs, tolerance).reduce();
     const det = mobius.determinant();
+    const complexOne = new ComplexNumber(1, 0, tolerance);
 
-    if (Math.abs(det.im) >= tolerance) {
+    if (!det.isEqualTo(complexOne)) {
       console.log("transformation:", mobius.coeffs);
       console.log("determinant:", det);
       console.log("tolerance:", tolerance);
 
-      throw new Error("Determinant of an isometry should be a real number");
+      throw new Error("Determinant of an isometry should be one");
     }
 
-    if (Math.abs(det.re) < tolerance) {
+    const [a, , , d] = mobius.coeffs;
+    const tr = a.add(d);
+
+    if (Math.abs(tr.im) >= tolerance) {
       console.log("transformation:", mobius.coeffs);
-      console.log("determinant:", det);
+      console.log("trace:", tr);
       console.log("tolerance:", tolerance);
 
-      throw new Error("Determinant of an isometry should be non-zero");
+      throw new Error("Trace of an isometry should be a real number");
     }
 
-    super(a, b, c, d);
-    this._mobius = mobius;
-    this._det = det.re;
+    super(mobius.coeffs, tolerance);
+    this.mobius = mobius;
+    this.det = det.re;
+    this.tr = tr.re;
     this._tolerance = tolerance;
-  }
 
-  get mobius() {
-    return this._mobius;
-  }
+    this.mobiusConstants = mobiusConstants;
+    this.uhpConstants = uhpConstants;
+    this.uhpFactory = uhpFactory;
 
-  get det() {
-    return this._det;
+    const fixedPoints = getUhpFixedPoints(
+      mobius,
+      this.mobiusConstants.IDENTITY,
+      tr.re,
+      tolerance,
+    );
+    this.fixedPoints = fixedPoints;
+
+    const { geodesicThroughPoints, distance, angleFromThreePoints } =
+      new UhpGeometry(tolerance);
+    const uhpIdentity = new UhpIsometry(null, tolerance);
+
+    // Identity transformation
+    if (fixedPoints === null) {
+      this.type = "identity";
+
+      this.standardForm = this;
+      this.conjToStd = null;
+    }
+
+    // Hyperbolic transformation
+    else if (Array.isArray(fixedPoints)) {
+      this.type = "hyperbolic";
+
+      const [fPoint0, fPoint1] = fixedPoints;
+      const axisOfTranslation = geodesicThroughPoints(fPoint0, fPoint1);
+      const intPoint = axisOfTranslation.points[1];
+      const imageOfIntPoint = this.apply(intPoint);
+      const translationLength = distance(intPoint, imageOfIntPoint);
+
+      this.axisOfTranslation = axisOfTranslation;
+      this.translationLength = translationLength;
+
+      if (
+        fPoint0.isEqualTo(uhpConstants.ZERO) &&
+        fPoint1.isEqualTo(uhpConstants.INFINITY)
+      ) {
+        this.standardForm = this;
+        this.conjToStd = uhpIdentity;
+      } else {
+        this.standardForm = standardHyperbolic(
+          translationLength,
+          uhpFactory,
+          tolerance,
+        );
+        this.conjToStd = moveGeodesicToImAxis(
+          fPoint0,
+          fPoint1,
+          uhpFactory,
+          tolerance,
+        );
+      }
+    }
+
+    // Elliptic transformation
+    else if (fixedPoints.type === "interior") {
+      this.type = "elliptic";
+
+      const centerOfRotation = fixedPoints;
+      const intPoint = this.uhpFactory(
+        centerOfRotation.re,
+        centerOfRotation.im + 1,
+      );
+      const imageOfIntPoint = this.apply(intPoint);
+      const angleOfRotation = angleFromThreePoints(
+        intPoint,
+        centerOfRotation,
+        imageOfIntPoint,
+      );
+
+      this.angleOfRotation = angleOfRotation;
+
+      if (centerOfRotation.isEqualTo(uhpConstants.I)) {
+        this.standardForm = this;
+        this.conjToStd = uhpIdentity;
+      } else {
+        this.standardForm = standardElliptic(
+          angleOfRotation,
+          uhpFactory,
+          tolerance,
+        );
+        this.conjToStd = movePointToI(centerOfRotation, uhpFactory, tolerance);
+      }
+    }
+
+    // Parabolic transformation
+    else {
+      this.type = "parabolic";
+
+      const base = fixedPoints;
+      if (base.isEqualTo(uhpConstants.INFINITY)) {
+        const secondCoeff = this.coeffs[1];
+
+        if (Math.abs(secondCoeff.im) >= tolerance) {
+          throw new Error("Parabolic displacement should be a real number");
+        }
+
+        this.standardForm = this;
+        this.conjToStd = uhpIdentity;
+        this.displacement = secondCoeff.re;
+      } else {
+        const conjToStd = movePointToInfinity(
+          base,
+          uhpIdentity,
+          uhpFactory,
+          tolerance,
+        );
+        const thisInStandard = this.conjugate(conjToStd);
+        const secondCoeff = thisInStandard.coeffs[1];
+
+        if (Math.abs(secondCoeff.im) >= tolerance) {
+          throw new Error("Parabolic displacement should be a real number");
+        }
+
+        this.standardForm = standardParabolic(
+          secondCoeff.re,
+          uhpFactory,
+          tolerance,
+        );
+        this.conjToStd = conjToStd;
+        this.displacement = secondCoeff.re;
+      }
+    }
   }
 
   get tolerance() {
@@ -94,331 +236,137 @@ export class UhpIsometry extends MobiusTransformation {
 
   compose(n: UhpIsometry): UhpIsometry {
     const composition = super.compose(n.mobius);
-    return new UhpIsometry(...composition.coeffs);
+    return new UhpIsometry(composition.coeffs);
   }
 
   conjugate(n: UhpIsometry): UhpIsometry {
     const conj = super.conjugate(n.mobius);
-    return new UhpIsometry(...conj.coeffs);
+    return new UhpIsometry(conj.coeffs);
   }
 
   inverse(): UhpIsometry {
     const mobInverse = super.inverse();
-    return new UhpIsometry(...mobInverse.coeffs);
+    return new UhpIsometry(mobInverse.coeffs);
   }
 
   apply(z: UhpPoint): UhpPoint {
-    if (isPointAtInfinity(z)) {
+    if (z.subType === "infinity") {
       const [a, , c] = this.coeffs;
 
-      if (isEqualTo(z, ZERO, this._tolerance)) {
-        return UhpINFINITY;
+      if (c.isEqualTo(this.uhpConstants.ZERO)) {
+        return this.uhpConstants.INFINITY;
       }
 
-      const quotient = divide(a, c);
-      return toUhpPoint(quotient.re, quotient.im);
+      const quotient = a.divide(c);
+      return this.uhpFactory(quotient.re, quotient.im);
     }
 
     const w = super.apply(z);
-    return toUhpPoint(w.re, w.im);
+    return this.uhpFactory(w.re, w.im);
   }
 
-  // A Mobius transformation is determined by where it sends three points
-  isEqualTo(n: UhpIsometry): boolean {
-    const testPoints = [ONE, ZERO, I];
-
-    for (const point of testPoints) {
-      const z = this.apply(point);
-      const w = n.apply(point);
-
-      if (!isEqualTo(z, w, this._tolerance)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  trace(): number {
-    const [a, , , d] = this.reduce().coeffs;
-    const tr = add(a, d);
-
-    if (!isEqualTo(tr, { re: tr.re, im: 0 }, this._tolerance)) {
-      throw new Error("The trace of an isometry should be a real number");
-    }
-
-    return tr.re;
-  }
-
-  fixedPoints():
-    | [UhpBoundaryPoint, UhpBoundaryPoint]
-    | UhpBoundaryPoint
-    | UhpInteriorPoint {
-    const [a, , c, d] = this.coeffs;
-    const tr = this.trace();
-
-    const fPointFormula = (plus: boolean = true): UhpPoint => {
-      if (isEqualTo(c, ZERO, this._tolerance)) {
-        return UhpINFINITY;
-      }
-
-      const discriminant = tr ** 2 - 4;
-      let rootTerm = nthRoot({ re: discriminant, im: 0 });
-      if (!plus) rootTerm = scale(rootTerm, -1);
-
-      const fPoint = divide(add(subtract(a, d), rootTerm), scale(c, 2));
-
-      return toUhpPoint(fPoint.re, fPoint.im);
-    };
-
-    const isParabolic = Math.abs(tr ** 2 - 4) < this._tolerance;
-    if (isParabolic) {
-      const fPoint = fPointFormula();
-
-      if (Math.abs(fPoint.im) < this.tolerance) {
-        return toUhpBoundaryPoint(fPoint.re, 0);
-      }
-
-      throw new Error("Fixed point of a parabolic should be a boundary point");
-    }
-
-    const isHyperbolic = tr ** 2 > 4;
-    if (isHyperbolic) {
-      const fPoints = [fPointFormula(false), fPointFormula()];
-
-      if (
-        fPoints.some(
-          ({ im }) => im !== Infinity || Math.abs(im) >= this._tolerance
-        )
-      ) {
-        throw new Error(
-          "Fixed points of a hyperbolic should be boundary points"
-        );
-      }
-
-      return [
-        toUhpBoundaryPoint(fPoints[0].re, fPoints[0].im),
-        toUhpBoundaryPoint(fPoints[1].re, fPoints[1].im),
-      ];
-    }
-
-    const fPoint = fPointFormula();
-    return toUhpInteriorPoint(fPoint.re, fPoint.im);
-  }
-
-  classify(): UhpIsometryInfo {
-    const identity = new UhpIsometry();
-    const isIdentity = this.isEqualTo(identity);
-
-    // The only way this is true is if the isometry is a scalar multiple of the identity
-    if (isIdentity) {
-      const firstCoeff = this.coeffs[0];
-      const conjFirstCoeff = divide(ONE, firstCoeff);
-
-      return {
-        type: "identity",
-        original: this,
-        standard: identity,
-        conjugation: new UhpIsometry(conjFirstCoeff, ZERO, ZERO, ONE),
-        fixedPoints: null,
-      };
-    }
-
-    // Isometries are determined by their fixed points
-    const fixedPoints = this.fixedPoints();
-    if (Array.isArray(fixedPoints)) {
-      const axisOfTranslation = geodesicThroughPoints(...fixedPoints);
-      const z = axisOfTranslation.points[1];
-      const w = this.apply(z);
-
-      const translationLength = uhpDistance(z, w);
-      const standard =
-        UhpIsometry.hyperbolicMovingIVertically(translationLength);
-      const conjugation = UhpIsometry.moveGeodesicToImAxis(z, w);
-
-      return {
-        type: "hyperbolic",
-        original: this,
-        standard,
-        conjugation,
-        fixedPoints,
-        translationLength,
-        axisOfTranslation,
-      };
-    }
-
-    if (isUhpInteriorPoint(fixedPoints)) {
-      const z = toUhpInteriorPoint(fixedPoints.re + 1, fixedPoints.im);
-      const w = this.apply(z);
-
-      const angleOfRotation = angleFromThreePoints(z, fixedPoints, w);
-      const standard = UhpIsometry.ellipticCenterI(angleOfRotation);
-      const conjugation = UhpIsometry.moveIntPointToI(fixedPoints);
-
-      return {
-        type: "elliptic",
-        original: this,
-        standard,
-        conjugation,
-        fixedPoints,
-        angleOfRotation,
-      };
-    }
-
-    const conjugation = UhpIsometry.movePointToInfinity(fixedPoints);
-    const conjugatedIsom = this.conjugate(conjugation);
-    const normalizedSecondCoeff = divide(
-      conjugatedIsom.coeffs[1],
-      conjugatedIsom.coeffs[0]
-    );
-
-    if (normalizedSecondCoeff.im >= this._tolerance) {
-      throw new Error("Parabolic displacement should be a real number");
-    }
-
-    const parabolicDisplacement = normalizedSecondCoeff.re;
-    const standard = UhpIsometry.parabolicAtInfinity(parabolicDisplacement);
-
-    return {
-      type: "parabolic",
-      original: this,
-      standard,
-      conjugation,
-      fixedPoints,
-      parabolicDisplacement,
-    };
-  }
-
-  isConjugateTo(n: UhpIsometry): UhpConjugateInfo {
-    const { type: type1, conjugation: conjugation1 } = this.classify();
-    const { type: type2, conjugation: conjugation2 } = this.classify();
+  isConjugateTo(n: UhpIsometry): UhpIsometry | null {
+    const { type: type1, conjToStd: conjugation1 } = this;
+    const { type: type2, conjToStd: conjugation2 } = n;
 
     if (type1 !== type2) {
-      return {
-        isConjugate: false,
-        conjugation: null,
-      };
+      return null;
     }
 
     const type = type1;
-    switch (type) {
-      case "identity": {
-        return {
-          isConjugate: true,
-          conjugation: null,
-        };
-      }
+    if (type === "identity") {
+      return new UhpIsometry(null, this._tolerance);
+    }
 
+    if (conjugation1 === null || conjugation2 === null) {
+      throw new Error(
+        "Non trivial isometries should not have a null conjugation matrix",
+      );
+    }
+
+    switch (type) {
       case "parabolic": {
-        return {
-          isConjugate: true,
-          conjugation: null,
-        };
+        const { displacement: disp1 } = this;
+        const { displacement: disp2 } = n;
+
+        if (disp1 === undefined || disp2 === undefined) {
+          throw new Error(
+            "Parabolic isometries should have a parabolic displacement",
+          );
+        }
+
+        if (
+          Math.abs(disp1) < this._tolerance ||
+          Math.abs(disp2) < this._tolerance
+        ) {
+          throw new Error("Identity transformation classified as parabolic");
+        }
+
+        // Displacements need to have the same sign for the conjugation matrix to be definable
+        if (disp1 * disp2 < 0) {
+          return null;
+        }
+
+        const conjugateBetweenStandardForms = standardHyperbolic(
+          Math.log(disp1 / disp2),
+          this.uhpFactory,
+          this._tolerance,
+        );
+        const conjugation = conjugation1.compose(
+          conjugateBetweenStandardForms.compose(conjugation2.inverse()),
+        );
+
+        return conjugation;
       }
 
       case "hyperbolic": {
-        return {
-          isConjugate: true,
-          conjugation: null,
-        };
+        const { translationLength: tLength1 } = this;
+        const { translationLength: tLength2 } = n;
+
+        if (tLength1 === undefined || tLength2 === undefined) {
+          throw new Error(
+            "Hyperbolic isometries should have a translation length",
+          );
+        }
+
+        if (Math.abs(tLength1 - tLength2) < this._tolerance) {
+          return conjugation1.compose(conjugation2.inverse());
+        }
+
+        if (Math.abs(tLength1 + tLength2) < this._tolerance) {
+          const identity = new UhpIsometry(null, this._tolerance);
+          const swapZeroAndInfinity = movePointToInfinity(
+            this.uhpConstants.ZERO,
+            identity,
+            this.uhpFactory,
+            this._tolerance,
+          );
+          const conjugation = conjugation1.compose(
+            swapZeroAndInfinity.compose(conjugation2.inverse()),
+          );
+
+          return conjugation;
+        }
+
+        return null;
       }
 
       case "elliptic": {
-        return {
-          isConjugate: true,
-          conjugation: null,
-        };
+        const { angleOfRotation: angle1 } = this;
+        const { angleOfRotation: angle2 } = n;
+
+        if (angle1 === undefined || angle2 === undefined) {
+          throw new Error(
+            "Elliptic isometries should have an angle of rotation",
+          );
+        }
+
+        if (Math.abs(angle1 - angle2) % (2 * Math.PI) < this._tolerance) {
+          return conjugation1.compose(conjugation2.inverse());
+        }
+
+        return null;
       }
     }
-  }
-
-  static moveIntPointToI(z: UhpInteriorPoint): UhpIsometry {
-    const moveToImAxis = new UhpIsometry(ONE, { re: -z.re, im: 0 }, ZERO, ONE);
-    const pointOnImAxis = moveToImAxis.apply(z);
-    const scaleDownToI = new UhpIsometry(
-      { re: 1 / pointOnImAxis.im, im: 0 },
-      ZERO,
-      ZERO,
-      ONE
-    );
-
-    return scaleDownToI.compose(moveToImAxis);
-  }
-
-  static movePointToInfinity(z: UhpBoundaryPoint): UhpIsometry {
-    if (isPointAtInfinity(z)) {
-      return new UhpIsometry(); // Return the identity if point is already at infinity
-    }
-
-    return new UhpIsometry(ZERO, ONE, ONE, scale(z, -1));
-  }
-
-  static movePointToZero(z: UhpBoundaryPoint): UhpIsometry {
-    if (isPointAtInfinity(z)) {
-      return new UhpIsometry(ZERO, ONE, NEGONE, ZERO);
-    }
-
-    return new UhpIsometry(ONE, scale(z, -1), ZERO, ONE);
-  }
-
-  // static rotatePointToImAxis(z: UhpPoint): UhpIsometry {
-  //   if (z.re === 0) {
-  //     return new UhpIsometry(); // Return the identity if point already lies on im-axis
-  //   }
-
-  //   const angleAtIWithImAxis = angleFromThreePoints(z, I, toUhpInteriorPoint(0, 2));
-
-  //   if (z.re < 0) {
-  //     return UhpIsometry.ellipticCenterI(-angleAtIWithImAxis);
-  //   }
-
-  //   return UhpIsometry.ellipticCenterI(angleAtIWithImAxis);
-  // }
-
-  static moveGeodesicToImAxis(
-    z: UhpPoint,
-    dir: { x: number; y: number }
-  ): UhpIsometry;
-  static moveGeodesicToImAxis(z: UhpPoint, w: UhpPoint): UhpIsometry;
-  static moveGeodesicToImAxis(
-    z: UhpPoint,
-    arg: { x: number; y: number } | UhpPoint
-  ): UhpIsometry {
-    // First overload
-    if ("x" in arg && "y" in arg) {
-      const moveZ = isUhpInteriorPoint(z)
-        ? UhpIsometry.moveIntPointToI(z)
-        : UhpIsometry.movePointToZero(z);
-
-      if (arg.x === 0) return moveZ;
-
-      const dir = toComplex(arg.x, arg.y);
-      const rotateDirToUp = UhpIsometry.ellipticCenterI(
-        Math.PI / 2 - argument(dir)
-      );
-
-      return rotateDirToUp.compose(moveZ);
-    }
-
-    // Second overload
-    const w = arg;
-    const geodesicToMove = geodesicThroughPoints(z, w);
-    const [ePoint0, , , ePoint1] = geodesicToMove.points;
-
-    // This sends ePoint0 to zero and ePoint1 to the point at infinity
-    return new UhpIsometry(NEGONE, ePoint0, ONE, scale(ePoint1, -1));
-  }
-
-  static ellipticCenterI(theta: number): UhpIsometry {
-    const conj = super.unitCircleRotation(theta).conjugateByCayley();
-    return new UhpIsometry(...conj.coeffs);
-  }
-
-  static hyperbolicMovingIVertically(distance: number): UhpIsometry {
-    return new UhpIsometry({ re: Math.exp(distance), im: 0 }, ZERO, ZERO, ONE);
-  }
-
-  static parabolicAtInfinity(distance: number): UhpIsometry {
-    return new UhpIsometry(ONE, { re: distance, im: 0 }, ZERO, ONE);
   }
 }

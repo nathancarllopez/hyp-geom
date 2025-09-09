@@ -1,73 +1,127 @@
-import {
-  add,
-  divide,
-  I,
-  multiply,
-  nthRoot,
-  ONE,
-  pointOnUnitCircle,
-  scale,
-  ZERO,
-} from "../general-math/complex-numbers";
-import { ComplexNumber } from "../types-validators/types";
+import { isPositiveNumber } from "../util";
+import { ComplexNumber, getComplexNumbers } from "./complex-numbers";
 
-interface MobiusInterface {
-  coeffs: ComplexNumber[];
-  reduce: () => MobiusTransformation;
-  compose: (n: MobiusTransformation) => MobiusTransformation;
-  conjugate: (n: MobiusTransformation) => MobiusTransformation;
-  conjugateByCayley: () => MobiusTransformation;
-  determinant: () => ComplexNumber;
-  inverse: () => MobiusTransformation;
-  apply: (z: ComplexNumber) => ComplexNumber;
+export function getMobiusTranformations(tolerance: number = 1e-4): {
+  constants: Record<string, MobiusTransformation>;
+  factory: (coeffs: ComplexNumber[]) => MobiusTransformation;
+} {
+  if (!isPositiveNumber(tolerance)) {
+    throw new Error("The tolerance must be a positive number");
+  }
+
+  const {
+    constants: { ZERO, ONE, I, NEGI },
+  } = getComplexNumbers(tolerance);
+
+  return {
+    constants: {
+      IDENTITY: new MobiusTransformation([ONE, ZERO, ZERO, ONE], tolerance),
+      CAYLEY: new MobiusTransformation([ONE, NEGI, ONE, I], tolerance).reduce(),
+    },
+    factory: (coeffs: ComplexNumber[]): MobiusTransformation => {
+      return new MobiusTransformation(coeffs, tolerance);
+    },
+  };
 }
 
-export class MobiusTransformation implements MobiusInterface {
-  readonly coeffs: ComplexNumber[] = [];
+export class MobiusTransformation {
+  public _tolerance: number;
+  readonly coeffs: ComplexNumber[];
+  private constants: Record<string, ComplexNumber>;
 
-  constructor(
-    a: ComplexNumber = ONE,
-    b: ComplexNumber = ZERO,
-    c: ComplexNumber = ZERO,
-    d: ComplexNumber = ONE
-  ) {
-    if (c.re === 0 && c.im === 0 && d.re === 0 && d.im === 0) {
-      throw new Error("Denominator of mobius transformation cannot be zero")
+  constructor(coeffs: ComplexNumber[], tolerance: number = 1e-4) {
+    if (!isPositiveNumber(tolerance)) {
+      throw new Error("The tolerance must be a positive number");
     }
 
-    this.coeffs.push(a, b, c, d);
+    if (coeffs.length !== 4) {
+      throw new Error(
+        "Must provide exactly four complex numbers as coefficients",
+      );
+    }
+
+    const { constants } = getComplexNumbers(tolerance);
+    const [, , c, d] = coeffs;
+
+    if (c.isEqualTo(constants.ZERO) && d.isEqualTo(constants.ZERO)) {
+      throw new Error("Denominator of mobius transformation cannot be zero");
+    }
+
+    this._tolerance = tolerance;
+    this.coeffs = coeffs;
+    this.constants = constants;
+  }
+
+  get tolerance() {
+    return this._tolerance;
+  }
+
+  set tolerance(newTolerance: number) {
+    if (!isPositiveNumber(newTolerance)) {
+      throw new Error("Tolerance must be positive");
+    }
+    this._tolerance = newTolerance;
+  }
+
+  // A Mobius transformation is determined by where it sends three points
+  isEqualTo(n: MobiusTransformation): boolean {
+    const testPoints = [
+      this.constants.ONE,
+      this.constants.ZERO,
+      this.constants.I,
+    ];
+
+    for (const point of testPoints) {
+      const z = this.apply(point);
+      const w = n.apply(point);
+
+      if (!z.isEqualTo(w)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   reduce(): MobiusTransformation {
     const det = this.determinant();
-    if (det.re === 0 && det.im === 0) {
+    if (det.isEqualTo(this.constants.ZERO)) {
       return this;
     }
 
-    const sqrtDet = nthRoot(det);
-    const reducedCoeffs = this.coeffs.map((coeff) => divide(coeff, sqrtDet));
-    
-    return new MobiusTransformation(...reducedCoeffs);
+    const sqrtDet = det.nthRoot();
+    const reducedCoeffs = this.coeffs.map((coeff) => coeff.divide(sqrtDet));
+
+    return new MobiusTransformation(reducedCoeffs, this._tolerance);
   }
 
-  compose(n: MobiusTransformation, doReduce: boolean = false): MobiusTransformation {
+  compose(
+    n: MobiusTransformation,
+    doReduce: boolean = false,
+  ): MobiusTransformation {
     const [a, b, c, d] = this.coeffs;
     const [nA, nB, nC, nD] = n.coeffs;
 
-    const composedA = add(multiply(a, nA), multiply(b, nC));
-    const composedB = add(multiply(a, nB), multiply(b, nD));
-    const composedC = add(multiply(c, nA), multiply(d, nC));
-    const composedD = add(multiply(c, nB), multiply(d, nD));
+    const composedA = a.multiply(nA).add(b.multiply(nC));
+    const composedB = a.multiply(nB).add(b.multiply(nD));
+    const composedC = c.multiply(nA).add(d.multiply(nC));
+    const composedD = c.multiply(nB).add(d.multiply(nD));
 
-    const composition = new MobiusTransformation(composedA, composedB, composedC, composedD);
+    const composition = new MobiusTransformation(
+      [composedA, composedB, composedC, composedD],
+      this._tolerance,
+    );
 
     if (doReduce) return composition.reduce();
     return composition;
   }
 
-  conjugate(n: MobiusTransformation, doReduce: boolean = false): MobiusTransformation {
+  conjugate(
+    n: MobiusTransformation,
+    doReduce: boolean = false,
+  ): MobiusTransformation {
     const det = n.determinant();
-    if (det.re === 0 && det.im === 0) {
+    if (det.isEqualTo(this.constants.ZERO)) {
       console.log("transformation:", n.coeffs);
       console.log("determinant:", det);
       throw new Error("Cannot conjugate by a non-invertible transformation");
@@ -77,31 +131,28 @@ export class MobiusTransformation implements MobiusInterface {
     return conj;
   }
 
-  conjugateByCayley(doReduce: boolean = false): MobiusTransformation {
-    return this.conjugate(MobiusTransformation.cayley(), doReduce);
-  }
-
   determinant(): ComplexNumber {
     const [a, b, c, d] = this.coeffs;
-    const ad = multiply(a, d);
-    const bc = multiply(b, c);
+    const ad = a.multiply(d);
+    const bc = b.multiply(c);
 
-    const det = add(ad, scale(bc, -1));
-
-    return det;
+    return ad.subtract(bc);
   }
 
   inverse(doReduce: boolean = false): MobiusTransformation {
     const det = this.determinant();
 
-    if (det.re === 0 && det.im === 0) {
+    if (det.isEqualTo(this.constants.ZERO)) {
       console.log("transformation:", this.coeffs);
       console.log("determinant:", det);
       throw new Error("Non-invertible transformation");
     }
 
     const [a, b, c, d] = this.coeffs;
-    const inv = new MobiusTransformation(d, scale(b, -1), scale(c, -1), a);
+    const inv = new MobiusTransformation(
+      [d, b.scale(-1), c.scale(-1), a],
+      this._tolerance,
+    );
 
     if (doReduce) return inv.reduce();
     return inv;
@@ -109,21 +160,13 @@ export class MobiusTransformation implements MobiusInterface {
 
   apply(z: ComplexNumber): ComplexNumber {
     const [a, b, c, d] = this.coeffs;
-    const numerator = add(multiply(a, z), b);
-    const denominator = add(multiply(c, z), d);
+    const numerator = a.multiply(z).add(b);
+    const denominator = c.multiply(z).add(d);
 
-    if (denominator.re === 0 && denominator.im === 0) {
-      return { re: Infinity, im: Infinity };
+    if (denominator.isEqualTo(this.constants.ZERO)) {
+      return this.constants.INFINITY;
     }
 
-    return divide(numerator, denominator);
-  }
-
-  static unitCircleRotation(theta: number): MobiusTransformation {
-    return new MobiusTransformation(pointOnUnitCircle(theta), ZERO, ZERO, ONE);
-  }
-
-  static cayley(): MobiusTransformation {
-    return new MobiusTransformation(ONE, scale(I, -1), ONE, I);
+    return numerator.divide(denominator);
   }
 }
