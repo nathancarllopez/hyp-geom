@@ -3,7 +3,11 @@ import {
   ComplexNumber,
   getComplexNumbers,
 } from "../../src/general-math/complex-numbers.js";
-import { randomComplex, randomReal } from "../helpers/random.js";
+import {
+  randomComplex,
+  randomNonZeroComplex,
+  randomReal,
+} from "../helpers/random.js";
 
 describe("Testing complex numbers (complex-numbers.ts)", () => {
   describe("getComplexNumbers factory function", () => {
@@ -550,15 +554,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("multiplying a number by its inverse yields one", () => {
-        const zero = new ComplexNumber(0, 0);
         const one = new ComplexNumber(1, 0);
-        let counter = 0;
 
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const inv = a.inverse();
           const prod = a.multiply(inv);
 
@@ -598,14 +597,8 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("inverse of inverse returns the original number", () => {
-        const zero = new ComplexNumber(0, 0);
-        let counter = 0;
-
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const inv = a.inverse();
           const invInv = inv.inverse();
 
@@ -614,15 +607,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("multiplying a number by its inverse yields one", () => {
-        const zero = new ComplexNumber(0, 0);
         const one = new ComplexNumber(1, 0);
-        let counter = 0;
 
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const inv = a.inverse();
           const prod = a.multiply(inv);
 
@@ -648,15 +636,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("dividing a complex number by itself yields one", () => {
-        const zero = new ComplexNumber(0, 0);
         const one = new ComplexNumber(1, 0);
-        let counter = 0;
 
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const result = a.divide(a);
 
           expect(result.isEqualTo(one)).toBe(true);
@@ -664,15 +647,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("dividing by one yields the original number", () => {
-        const zero = new ComplexNumber(0, 0);
         const one = new ComplexNumber(1, 0);
-        let counter = 0;
 
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const result = a.divide(one);
 
           expect(result.isEqualTo(a)).toBe(true);
@@ -681,13 +659,9 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
 
       it("dividing zero by any nonzero complex yields zero", () => {
         const zero = new ComplexNumber(0, 0);
-        let counter = 0;
 
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const result = zero.divide(a);
 
           expect(result.isEqualTo(zero)).toBe(true);
@@ -695,15 +669,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("division by negative one negates the complex number", () => {
-        const zero = new ComplexNumber(0, 0);
         const negOne = new ComplexNumber(-1, 0);
-        let counter = 0;
 
-        while (counter < 10) {
+        for (let i = 0; i < 10; i++) {
           const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
           const result = a.divide(negOne);
           const expected = a.scale(-1);
 
@@ -712,16 +681,10 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("division distributes over addition: (a.add(b)).divide(c) == a.divide(c).add(b.divide(c)", () => {
-        const zero = new ComplexNumber(0, 0);
-        let counter = 0;
-
-        while (counter < 10) {
-          const c = randomComplex();
-          if (c.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
           const a = randomComplex();
           const b = randomComplex();
+          const c = randomNonZeroComplex();
 
           const left = a.add(b).divide(c);
           const right = a.divide(c).add(b.divide(c));
@@ -796,28 +759,16 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("returns zero when comparing a complex number to itself", () => {
-        const zero = new ComplexNumber(0, 0);
-        let counter = 0;
-
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           expect(a.angleBetween(a)).toBeCloseTo(0);
         }
       });
 
       it("is symmetric: angleBetween(a, b) == angleBetween(b, a)", () => {
-        const zero = new ComplexNumber(0, 0);
-        let counter = 0;
-
-        while (counter < 10) {
-          const a = randomComplex();
-          const b = randomComplex();
-          if (a.isEqualTo(zero) || b.isEqualTo(zero)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
+          const b = randomNonZeroComplex();
           expect(a.angleBetween(b)).toBeCloseTo(b.angleBetween(a));
         }
       });
@@ -918,15 +869,8 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       });
 
       it("principalNthRoot is consistent with multiplication: root^n ≈ original", () => {
-        const zero = new ComplexNumber(0, 0);
-        const infinity = new ComplexNumber(Infinity, Infinity);
-        let counter = 0;
-
-        while (counter < 10) {
-          const a = randomComplex();
-          if (a.isEqualTo(zero) || a.isEqualTo(infinity)) continue;
-
-          counter++;
+        for (let i = 0; i < 10; i++) {
+          const a = randomNonZeroComplex();
           const n = Math.floor(Math.random() * 4) + 2; // n in [2,5]
           const root = a.principalNthRoot(n);
           let prod = root;
