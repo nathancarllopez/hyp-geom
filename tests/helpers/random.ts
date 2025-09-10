@@ -7,17 +7,13 @@ import { getUhpPoints, UhpPoint } from "../../src/upper-half-plane/points.js";
 
 export const randomReal = (
   upperBound: number = 1e5,
-  isPositive: boolean = false
+  isNonNegative: boolean = false
 ): number => {
-  let randomPositive: number;
-
-  do {
-    randomPositive = Math.random() * 2 * upperBound;
-  } while (randomPositive === 0);
-
-  if (isPositive) return randomPositive / 2;
-  return randomPositive - upperBound;
-};
+  const randomTwiceBound = Math.random() * upperBound * 2;
+  
+  if (isNonNegative) return randomTwiceBound / 2;
+  return randomTwiceBound - upperBound;
+}
 
 export const randomComplex = (
   upperBound: number = 1e5,
@@ -57,6 +53,7 @@ export const randomMobius = (
   let c: ComplexNumber;
   let d: ComplexNumber;
 
+  // We don't directly use randomNonZeroComplex here because I want to allow one to be zero but not both
   do {
     c = randomComplex(upperBound, rtol, atol);
     d = randomComplex(upperBound, rtol, atol);
@@ -72,8 +69,8 @@ export const randomUhpBoundaryPoint = (
   rtol: number = 1e-5,
   atol: number = 1e-8
 ): UhpPoint => {
-  const z = randomComplex(upperBound, rtol, atol);
-  return getUhpPoints(rtol, atol).factory(z.re, 0);
+  const re = randomReal(upperBound);
+  return getUhpPoints(rtol, atol).factory(re, 0);
 };
 
 export const randomUhpInteriorPoint = (
@@ -81,14 +78,12 @@ export const randomUhpInteriorPoint = (
   rtol: number = 1e-5,
   atol: number = 1e-8
 ): UhpPoint => {
-  let z: ComplexNumber;
+  const re = randomReal(upperBound);
+  let im: number;
 
   do {
-    z = randomNonZeroComplex(upperBound, rtol, atol);
-  } while (z.im === 0);
+    im = randomReal(upperBound, true);
+  } while (im === 0);
 
-  const { factory } = getUhpPoints(rtol, atol);
-
-  if (z.im < 0) return factory(z.re, -z.im);
-  return factory(z.re, z.im);
+  return getUhpPoints(rtol, atol).factory(re, im);
 };
