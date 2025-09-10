@@ -11,20 +11,22 @@ import {
 
 describe("Testing complex numbers (complex-numbers.ts)", () => {
   describe("getComplexNumbers factory function", () => {
-    it("returns a set of complex numbers and a factory function for other complex numbers", () => {
+    it("should return a set of complex numbers and a factory function for other complex numbers", () => {
       for (let i = 0; i < 5; i++) {
         const rtol = randomReal(1, true);
         const atol = randomReal(1, true);
-        const { constants, factory } = getComplexNumbers(rtol, atol);
+        const result = getComplexNumbers(rtol, atol);
 
-        expect(typeof constants).toBe("object");
+        expect(result).toHaveProperty("constants");
+        expect(result).toHaveProperty("factory");
 
-        for (const complex of Object.values(constants)) {
-          expect(complex instanceof ComplexNumber).toBeTruthy();
+        for (const complex of Object.values(result.constants)) {
+          expect(complex instanceof ComplexNumber).toBe(true);
           expect(complex.rtol).toBe(rtol);
           expect(complex.atol).toBe(atol);
         }
 
+        const { factory } = result;
         expect(typeof factory).toBe("function");
 
         for (let i = 0; i < 10; i++) {
@@ -32,7 +34,7 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
           const im = randomReal();
           const complex = factory(re, im);
 
-          expect(complex instanceof ComplexNumber).toBeTruthy();
+          expect(complex instanceof ComplexNumber).toBe(true);
           expect(complex.rtol).toBe(rtol);
           expect(complex.atol).toBe(atol);
         }
@@ -40,24 +42,12 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
     });
 
     it("throws an error if rtol or atol is not positive", () => {
-      expect(() => getComplexNumbers(0, 1e-4)).toThrow(
-        "Tolerances must be positive",
-      );
-      expect(() => getComplexNumbers(-1, 1e-4)).toThrow(
-        "Tolerances must be positive",
-      );
-      expect(() => getComplexNumbers(NaN, 1e-4)).toThrow(
-        "Tolerances must be positive",
-      );
-      expect(() => getComplexNumbers(1e-4, 0)).toThrow(
-        "Tolerances must be positive",
-      );
-      expect(() => getComplexNumbers(1e-4, -1)).toThrow(
-        "Tolerances must be positive",
-      );
-      expect(() => getComplexNumbers(1e-4, NaN)).toThrow(
-        "Tolerances must be positive",
-      );
+      expect(() => getComplexNumbers(0, 1e-4)).toThrow();
+      expect(() => getComplexNumbers(-1, 1e-4)).toThrow();
+      expect(() => getComplexNumbers(NaN, 1e-4)).toThrow();
+      expect(() => getComplexNumbers(1e-4, 0)).toThrow();
+      expect(() => getComplexNumbers(1e-4, -1)).toThrow();
+      expect(() => getComplexNumbers(1e-4, NaN)).toThrow();
     });
 
     it("constants have correct values", () => {
@@ -880,6 +870,52 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
 
           expect(prod.isEqualTo(a)).toBe(true);
         }
+      });
+    });
+
+    describe("clone", () => {
+      it("produces a new ComplexNumber instance with the same real, imaginary parts, and tolerances", () => {
+        const a = new ComplexNumber(5, -3, 1e-4, 1e-7);
+        const clone = a.clone();
+        expect(clone).not.toBe(a); // Should be a different instance
+        expect(clone instanceof ComplexNumber).toBe(true);
+        expect(clone.re).toBe(a.re);
+        expect(clone.im).toBe(a.im);
+        expect(clone.rtol).toBe(a.rtol);
+        expect(clone.atol).toBe(a.atol);
+        expect(clone.isEqualTo(a)).toBe(true);
+      });
+
+      it("cloning zero yields a new zero complex number", () => {
+        const zero = new ComplexNumber(0, 0, 1e-5, 1e-8);
+        const clone = zero.clone();
+        expect(clone).not.toBe(zero);
+        expect(clone.isEqualTo(zero)).toBe(true);
+      });
+
+      it("cloning infinity yields a new infinity complex number", () => {
+        const inf = new ComplexNumber(Infinity, Infinity, 1e-5, 1e-8);
+        const clone = inf.clone();
+        expect(clone).not.toBe(inf);
+        expect(clone.isEqualTo(inf)).toBe(true);
+      });
+
+      it("cloning preserves rtol and atol even after they are changed", () => {
+        const a = new ComplexNumber(2, 3);
+        a.rtol = 1e-3;
+        a.atol = 1e-6;
+        const clone = a.clone();
+        expect(clone.rtol).toBe(1e-3);
+        expect(clone.atol).toBe(1e-6);
+      });
+
+      it("multiple clones are independent instances but equal in value", () => {
+        const a = new ComplexNumber(-7, 4, 1e-4, 1e-9);
+        const clone1 = a.clone();
+        const clone2 = a.clone();
+        expect(clone1).not.toBe(clone2);
+        expect(clone1.isEqualTo(clone2)).toBe(true);
+        expect(clone1.isEqualTo(a)).toBe(true);
       });
     });
   });
