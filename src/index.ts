@@ -1,11 +1,11 @@
 import { ComplexNumber } from "./general-math/complex-numbers.js";
+import { initializeUhpPrivateFields } from "./initializers.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,
   movePointToInfinity,
 } from "./upper-half-plane/conjugations.js";
 import { UhpGeometry } from "./upper-half-plane/geometry.js";
-import { initializeUhpPrivateFields } from "./upper-half-plane/initializeUhpPrivateFields.js";
 import { UhpIsometry } from "./upper-half-plane/isometries.js";
 import { UhpPoint } from "./upper-half-plane/points.js";
 import {
