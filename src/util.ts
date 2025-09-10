@@ -1,6 +1,7 @@
 export type PositiveNumber = number & { __brand: "PositiveNumber" };
 
-export const isPositiveNumber = (num: unknown): num is PositiveNumber => typeof num === "number" && num > 0;
+export const isPositiveNumber = (num: unknown): num is PositiveNumber =>
+  typeof num === "number" && num > 0;
 
 export const isPointArray = (arg: unknown): arg is [number, number] =>
   Array.isArray(arg) &&
