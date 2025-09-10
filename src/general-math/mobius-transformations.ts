@@ -32,7 +32,7 @@ export function getMobiusTranformations(
 }
 
 export class MobiusTransformation {
-  private constants: Record<string, ComplexNumber>;
+  readonly constants: Record<string, ComplexNumber>;
   readonly coeffs: ComplexNumber[];
   public _rtol: number;
   public _atol: number;
@@ -104,10 +104,23 @@ export class MobiusTransformation {
     return true;
   }
 
+  determinant(): ComplexNumber {
+    const [a, b, c, d] = this.coeffs;
+    const ad = a.multiply(d);
+    const bc = b.multiply(c);
+
+    return ad.subtract(bc);
+  }
+
+  clone(): MobiusTransformation {
+    const clonedCoeffs = this.coeffs.map((c) => c.clone());
+    return new MobiusTransformation(clonedCoeffs, this._rtol, this._atol);
+  }
+
   reduce(): MobiusTransformation {
     const det = this.determinant();
     if (det.isEqualTo(this.constants.ZERO)) {
-      return this;
+      return this.clone();
     }
 
     const sqrtDet = det.principalNthRoot();
@@ -153,14 +166,6 @@ export class MobiusTransformation {
     return conj;
   }
 
-  determinant(): ComplexNumber {
-    const [a, b, c, d] = this.coeffs;
-    const ad = a.multiply(d);
-    const bc = b.multiply(c);
-
-    return ad.subtract(bc);
-  }
-
   inverse(doReduce: boolean = false): MobiusTransformation {
     const det = this.determinant();
 
@@ -183,6 +188,12 @@ export class MobiusTransformation {
 
   apply(z: ComplexNumber): ComplexNumber {
     const [a, b, c, d] = this.coeffs;
+    if (z.isEqualTo(this.constants.INFINITY)) {
+      return c.isEqualTo(this.constants.ZERO)
+        ? this.constants.INFINITY
+        : a.divide(c);
+    }
+
     const numerator = a.multiply(z).add(b);
     const denominator = c.multiply(z).add(d);
 
