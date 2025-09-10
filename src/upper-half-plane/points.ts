@@ -3,7 +3,7 @@ import { isPositiveNumber } from "../util.js";
 
 export function getUhpPoints(
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): {
   constants: Record<string, UhpPoint>;
   factory: (re: number, im: number) => UhpPoint;
@@ -35,7 +35,7 @@ export class UhpPoint extends ComplexNumber {
     re: number = 0,
     im: number = 0,
     rtol: number = 1e-5,
-    atol: number = 1e-8
+    atol: number = 1e-8,
   ) {
     if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
       throw new Error("Tolerances must be positive");

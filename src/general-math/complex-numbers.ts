@@ -8,7 +8,7 @@ interface ComplexNumberInterface {
 
 export function getComplexNumbers(
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): {
   constants: Record<string, ComplexNumber>;
   factory: (re: number, im: number) => ComplexNumber;
@@ -43,7 +43,7 @@ export class ComplexNumber implements ComplexNumberInterface {
     re: number = 0,
     im: number = 0,
     rtol: number = 1e-5,
-    atol: number = 1e-8
+    atol: number = 1e-8,
   ) {
     if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
       throw new Error("Tolerances must be positive");
@@ -53,11 +53,11 @@ export class ComplexNumber implements ComplexNumberInterface {
     if (infiniteInputs) {
       if (!(re === Infinity && im === Infinity)) {
         throw new Error(
-          "If one of the real or imaginary part is infinite, the other must be as well"
+          "If one of the real or imaginary part is infinite, the other must be as well",
         );
       }
     }
-    
+
     this.re = re;
     this.im = im;
     this.modulus = Math.hypot(re, im);
@@ -118,7 +118,7 @@ export class ComplexNumber implements ComplexNumberInterface {
   multiply(w: ComplexNumber): ComplexNumber {
     return new ComplexNumber(
       this.re * w.re - this.im * w.im,
-      this.re * w.im + this.im * w.re
+      this.re * w.im + this.im * w.re,
     );
   }
 
@@ -150,7 +150,12 @@ export class ComplexNumber implements ComplexNumberInterface {
 
   // Via the dot product
   angleBetween(w: ComplexNumber): number {
-    const infinity = new ComplexNumber(Infinity, Infinity, this._rtol, this._atol);
+    const infinity = new ComplexNumber(
+      Infinity,
+      Infinity,
+      this._rtol,
+      this._atol,
+    );
     if (this.isEqualTo(infinity) || w.isEqualTo(infinity)) {
       throw new Error("Cannot find an angle with infinity");
     }
@@ -168,7 +173,12 @@ export class ComplexNumber implements ComplexNumberInterface {
 
   // Right now this is only ever used to take the square root of numbers I expect to be real. If this ever gets used more robustly, I should revisit this.
   principalNthRoot(n: number = 2): ComplexNumber {
-    const infinity = new ComplexNumber(Infinity, Infinity, this._rtol, this._atol);
+    const infinity = new ComplexNumber(
+      Infinity,
+      Infinity,
+      this._rtol,
+      this._atol,
+    );
     if (this.isEqualTo(infinity)) {
       throw new Error("Cannot take a root of infinity");
     }
@@ -184,7 +194,7 @@ export class ComplexNumber implements ComplexNumberInterface {
       rootModulus * Math.cos(rootArg),
       rootModulus * Math.sin(rootArg),
       this._rtol,
-      this._atol
+      this._atol,
     );
   }
 }

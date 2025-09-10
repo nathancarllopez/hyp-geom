@@ -8,7 +8,7 @@ export function getUhpFixedPoints(
   identity: MobiusTransformation,
   tr: number,
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): UhpFixedPoints {
   if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
     throw new Error("Tolerances must be positive");
@@ -58,7 +58,7 @@ export function getUhpFixedPoints(
 
     if (
       fPoints.some(
-        ({ im }) => Number.isFinite(im) && !nearlyEqual(im, 0, rtol, atol)
+        ({ im }) => Number.isFinite(im) && !nearlyEqual(im, 0, rtol, atol),
       )
     ) {
       throw new Error("Fixed points of a hyperbolic should be boundary points");

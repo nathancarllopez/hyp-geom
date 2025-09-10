@@ -40,7 +40,7 @@ export class UhpIsometry extends MobiusTransformation {
   constructor(
     coeffs: ComplexNumber[] | null,
     rtol: number = 1e-5,
-    atol: number = 1e-8
+    atol: number = 1e-8,
   ) {
     if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
       throw new Error("Tolerances must be positive");
@@ -48,7 +48,7 @@ export class UhpIsometry extends MobiusTransformation {
 
     const { constants: uhpConstants, factory: uhpFactory } = getUhpPoints(
       rtol,
-      atol
+      atol,
     );
     const { constants: mobiusConstants } = getMobiusTranformations(rtol, atol);
 
@@ -112,7 +112,7 @@ export class UhpIsometry extends MobiusTransformation {
       this.mobiusConstants.IDENTITY,
       tr.re,
       rtol,
-      atol
+      atol,
     );
     this.fixedPoints = fixedPoints;
 
@@ -152,14 +152,14 @@ export class UhpIsometry extends MobiusTransformation {
           translationLength,
           uhpFactory,
           rtol,
-          atol
+          atol,
         );
         this.conjToStd = moveGeodesicToImAxis(
           fPoint0,
           fPoint1,
           uhpFactory,
           rtol,
-          atol
+          atol,
         );
       }
     }
@@ -171,13 +171,13 @@ export class UhpIsometry extends MobiusTransformation {
       const centerOfRotation = fixedPoints;
       const intPoint = this.uhpFactory(
         centerOfRotation.re,
-        centerOfRotation.im + 1
+        centerOfRotation.im + 1,
       );
       const imageOfIntPoint = this.apply(intPoint);
       const angleOfRotation = angleFromThreePoints(
         intPoint,
         centerOfRotation,
-        imageOfIntPoint
+        imageOfIntPoint,
       );
 
       this.angleOfRotation = angleOfRotation;
@@ -190,7 +190,7 @@ export class UhpIsometry extends MobiusTransformation {
           angleOfRotation,
           uhpFactory,
           rtol,
-          atol
+          atol,
         );
         this.conjToStd = movePointToI(centerOfRotation, uhpFactory, rtol, atol);
       }
@@ -217,7 +217,7 @@ export class UhpIsometry extends MobiusTransformation {
           uhpIdentity,
           uhpFactory,
           rtol,
-          atol
+          atol,
         );
         const thisInStandard = this.conjugate(conjToStd);
         const secondCoeff = thisInStandard.coeffs[1];
@@ -230,7 +230,7 @@ export class UhpIsometry extends MobiusTransformation {
           secondCoeff.re,
           uhpFactory,
           rtol,
-          atol
+          atol,
         );
         this.conjToStd = conjToStd;
         this.displacement = secondCoeff.re;
@@ -303,7 +303,7 @@ export class UhpIsometry extends MobiusTransformation {
 
     if (conjugation1 === null || conjugation2 === null) {
       throw new Error(
-        "Non trivial isometries should not have a null conjugation matrix"
+        "Non trivial isometries should not have a null conjugation matrix",
       );
     }
 
@@ -314,7 +314,7 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (disp1 === undefined || disp2 === undefined) {
           throw new Error(
-            "Parabolic isometries should have a parabolic displacement"
+            "Parabolic isometries should have a parabolic displacement",
           );
         }
 
@@ -334,10 +334,10 @@ export class UhpIsometry extends MobiusTransformation {
           Math.log(disp1 / disp2),
           this.uhpFactory,
           this._rtol,
-          this._atol
+          this._atol,
         );
         const conjugation = conjugation1.compose(
-          conjugateBetweenStandardForms.compose(conjugation2.inverse())
+          conjugateBetweenStandardForms.compose(conjugation2.inverse()),
         );
 
         return conjugation;
@@ -349,7 +349,7 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (tLength1 === undefined || tLength2 === undefined) {
           throw new Error(
-            "Hyperbolic isometries should have a translation length"
+            "Hyperbolic isometries should have a translation length",
           );
         }
 
@@ -364,10 +364,10 @@ export class UhpIsometry extends MobiusTransformation {
             identity,
             this.uhpFactory,
             this._rtol,
-            this._atol
+            this._atol,
           );
           const conjugation = conjugation1.compose(
-            swapZeroAndInfinity.compose(conjugation2.inverse())
+            swapZeroAndInfinity.compose(conjugation2.inverse()),
           );
 
           return conjugation;
@@ -382,7 +382,7 @@ export class UhpIsometry extends MobiusTransformation {
 
         if (angle1 === undefined || angle2 === undefined) {
           throw new Error(
-            "Elliptic isometries should have an angle of rotation"
+            "Elliptic isometries should have an angle of rotation",
           );
         }
 

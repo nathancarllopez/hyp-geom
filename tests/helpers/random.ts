@@ -7,18 +7,18 @@ import { getUhpPoints, UhpPoint } from "../../src/upper-half-plane/points.js";
 
 export const randomReal = (
   upperBound: number = 1e5,
-  isNonNegative: boolean = false
+  isNonNegative: boolean = false,
 ): number => {
   const randomTwiceBound = Math.random() * upperBound * 2;
-  
+
   if (isNonNegative) return randomTwiceBound / 2;
   return randomTwiceBound - upperBound;
-}
+};
 
 export const randomComplex = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): ComplexNumber => {
   const re = randomReal(upperBound);
   const im = randomReal(upperBound);
@@ -29,7 +29,7 @@ export const randomComplex = (
 export const randomNonZeroComplex = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): ComplexNumber => {
   let z: ComplexNumber;
 
@@ -44,7 +44,7 @@ export const randomMobius = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
   atol: number = 1e-8,
-  doReduce: boolean = false
+  doReduce: boolean = false,
 ): MobiusTransformation => {
   const { ZERO } = getComplexNumbers(rtol, atol).constants;
 
@@ -67,7 +67,7 @@ export const randomMobius = (
 export const randomUhpBoundaryPoint = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): UhpPoint => {
   const re = randomReal(upperBound);
   return getUhpPoints(rtol, atol).factory(re, 0);
@@ -76,7 +76,7 @@ export const randomUhpBoundaryPoint = (
 export const randomUhpInteriorPoint = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): UhpPoint => {
   const re = randomReal(upperBound);
   let im: number;

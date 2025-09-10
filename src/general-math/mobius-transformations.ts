@@ -3,7 +3,7 @@ import { ComplexNumber, getComplexNumbers } from "./complex-numbers.js";
 
 export function getMobiusTranformations(
   rtol: number = 1e-5,
-  atol: number = 1e-8
+  atol: number = 1e-8,
 ): {
   constants: Record<string, MobiusTransformation>;
   factory: (coeffs: ComplexNumber[]) => MobiusTransformation;
@@ -22,7 +22,7 @@ export function getMobiusTranformations(
       CAYLEY: new MobiusTransformation(
         [ONE, NEGI, ONE, I],
         rtol,
-        atol
+        atol,
       ).reduce(),
     },
     factory: (coeffs: ComplexNumber[]): MobiusTransformation => {
@@ -40,7 +40,7 @@ export class MobiusTransformation {
   constructor(
     coeffs: ComplexNumber[],
     rtol: number = 1e-5,
-    atol: number = 1e-8
+    atol: number = 1e-8,
   ) {
     if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
       throw new Error("Tolerances must be positive");
@@ -48,7 +48,7 @@ export class MobiusTransformation {
 
     if (coeffs.length !== 4) {
       throw new Error(
-        "Must provide exactly four complex numbers as coefficients"
+        "Must provide exactly four complex numbers as coefficients",
       );
     }
 
@@ -118,7 +118,7 @@ export class MobiusTransformation {
 
   compose(
     n: MobiusTransformation,
-    doReduce: boolean = false
+    doReduce: boolean = false,
   ): MobiusTransformation {
     const [a, b, c, d] = this.coeffs;
     const [nA, nB, nC, nD] = n.coeffs;
@@ -131,7 +131,7 @@ export class MobiusTransformation {
     const composition = new MobiusTransformation(
       [composedA, composedB, composedC, composedD],
       this._rtol,
-      this._atol
+      this._atol,
     );
 
     if (doReduce) return composition.reduce();
@@ -140,7 +140,7 @@ export class MobiusTransformation {
 
   conjugate(
     n: MobiusTransformation,
-    doReduce: boolean = false
+    doReduce: boolean = false,
   ): MobiusTransformation {
     const det = n.determinant();
     if (det.isEqualTo(this.constants.ZERO)) {
@@ -174,7 +174,7 @@ export class MobiusTransformation {
     const inv = new MobiusTransformation(
       [d, b.scale(-1), c.scale(-1), a],
       this._rtol,
-      this._atol
+      this._atol,
     );
 
     if (doReduce) return inv.reduce();

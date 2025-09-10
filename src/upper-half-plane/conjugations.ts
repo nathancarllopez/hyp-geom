@@ -8,21 +8,21 @@ export function moveGeodesicToImAxis(
   direction: ComplexNumber,
   factory: (re: number, im: number) => UhpPoint,
   rtol: number,
-  atol: number
+  atol: number,
 ): UhpIsometry;
 export function moveGeodesicToImAxis(
   z: UhpPoint,
   w: UhpPoint,
   factory: (re: number, im: number) => UhpPoint,
   rtol: number,
-  atol: number
+  atol: number,
 ): UhpIsometry;
 export function moveGeodesicToImAxis(
   arg1: UhpPoint,
   arg2: ComplexNumber | UhpPoint,
   factory: (re: number, im: number) => UhpPoint,
   rtol: number,
-  atol: number
+  atol: number,
 ) {
   const { geodesicThroughPoints, geodesicFromBaseAndDirection } =
     new UhpGeometry(rtol, atol);
@@ -38,7 +38,7 @@ export function moveGeodesicToImAxis(
   return new UhpIsometry(
     [factory(-1, 0), ePoint0, factory(1, 0), ePoint1.scale(-1)],
     rtol,
-    atol
+    atol,
   );
 }
 
@@ -46,7 +46,7 @@ export function movePointToI(
   z: UhpPoint,
   factory: (re: number, im: number) => UhpPoint,
   rtol: number,
-  atol: number
+  atol: number,
 ): UhpIsometry {
   if (z.type !== "interior") {
     throw new Error("Only interior points can be moved to I");
@@ -60,7 +60,7 @@ export function movePointToI(
       factory(1, 0),
     ],
     rtol,
-    atol
+    atol,
   );
 }
 
@@ -69,13 +69,13 @@ export function movePointToInfinity(
   identity: UhpIsometry,
   factory: (re: number, im: number) => UhpPoint,
   rtol: number,
-  atol: number
+  atol: number,
 ): UhpIsometry {
   if (z.subType === "infinity") return identity;
 
   return new UhpIsometry(
     [factory(0, 0), factory(-1, 0), factory(1, 0), z.scale(-1)],
     rtol,
-    atol
+    atol,
   );
 }

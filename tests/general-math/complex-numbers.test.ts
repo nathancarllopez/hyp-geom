@@ -41,22 +41,22 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
 
     it("throws an error if rtol or atol is not positive", () => {
       expect(() => getComplexNumbers(0, 1e-4)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
       expect(() => getComplexNumbers(-1, 1e-4)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
       expect(() => getComplexNumbers(NaN, 1e-4)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
       expect(() => getComplexNumbers(1e-4, 0)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
       expect(() => getComplexNumbers(1e-4, -1)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
       expect(() => getComplexNumbers(1e-4, NaN)).toThrow(
-        "Tolerances must be positive"
+        "Tolerances must be positive",
       );
     });
 
@@ -723,7 +723,7 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
         const c = new ComplexNumber(0.5, 0.5);
         const d = new ComplexNumber(0.25, 0.75);
         expect(c.eucDistance(d)).toBeCloseTo(
-          Math.sqrt((0.5 - 0.25) ** 2 + (0.5 - 0.75) ** 2)
+          Math.sqrt((0.5 - 0.25) ** 2 + (0.5 - 0.75) ** 2),
         );
       });
 
@@ -777,13 +777,13 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
         const inf = new ComplexNumber(Infinity, Infinity);
         const a = new ComplexNumber(1, 2);
         expect(() => inf.angleBetween(a)).toThrow(
-          "Cannot find an angle with infinity"
+          "Cannot find an angle with infinity",
         );
         expect(() => a.angleBetween(inf)).toThrow(
-          "Cannot find an angle with infinity"
+          "Cannot find an angle with infinity",
         );
         expect(() => inf.angleBetween(inf)).toThrow(
-          "Cannot find an angle with infinity"
+          "Cannot find an angle with infinity",
         );
       });
 
@@ -791,13 +791,13 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
         const zero = new ComplexNumber(0, 0);
         const a = new ComplexNumber(1, 2);
         expect(() => zero.angleBetween(a)).toThrow(
-          "Cannot find an angle with zero"
+          "Cannot find an angle with zero",
         );
         expect(() => a.angleBetween(zero)).toThrow(
-          "Cannot find an angle with zero"
+          "Cannot find an angle with zero",
         );
         expect(() => zero.angleBetween(zero)).toThrow(
-          "Cannot find an angle with zero"
+          "Cannot find an angle with zero",
         );
       });
 
@@ -805,7 +805,7 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
         const a = new ComplexNumber(-1, 1); // argument = 3*pi/4
         const b = new ComplexNumber(1, -1); // argument = -pi/4
         expect(a.angleBetween(b)).toBeCloseTo(
-          Math.abs((3 * Math.PI) / 4 - -Math.PI / 4)
+          Math.abs((3 * Math.PI) / 4 - -Math.PI / 4),
         );
       });
     });
@@ -856,7 +856,7 @@ describe("Testing complex numbers (complex-numbers.ts)", () => {
       it("throws when taking root of infinity", () => {
         const inf = new ComplexNumber(Infinity, Infinity);
         expect(() => inf.principalNthRoot(2)).toThrow(
-          "Cannot take a root of infinity"
+          "Cannot take a root of infinity",
         );
       });
 

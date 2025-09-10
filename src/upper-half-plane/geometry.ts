@@ -69,7 +69,7 @@ export class UhpGeometry {
 
     if (isVertical) {
       throw new Error(
-        "Points on vertical geodesics are not parameterized by angle"
+        "Points on vertical geodesics are not parameterized by angle",
       );
     }
 
@@ -78,7 +78,7 @@ export class UhpGeometry {
         Math.hypot(z.re - center.re, z.im),
         radius,
         this._rtol,
-        this._atol
+        this._atol,
       )
     ) {
       throw new Error("Point does not lie on this geodesic");
@@ -90,7 +90,7 @@ export class UhpGeometry {
   // dirPoint is a point on the geodesic that determines which of the two possible tangent vectors we return, e.g., up vs down for a vertical geodesic
   tangentAtPointOnGeodesic(
     basePoint: UhpPoint,
-    dirPoint: UhpPoint
+    dirPoint: UhpPoint,
   ): ComplexNumber {
     const geod = this.geodesicThroughPoints(basePoint, dirPoint);
 
@@ -105,7 +105,7 @@ export class UhpGeometry {
     const headingRight = basePosition - dirPosition > 0;
     const tangent = new ComplexNumber(
       -Math.sin(basePosition),
-      Math.cos(basePosition)
+      Math.cos(basePosition),
     );
 
     if (headingRight) tangent.scale(-1);
@@ -128,7 +128,7 @@ export class UhpGeometry {
   getPointOnGeodesic(
     radius: number,
     centerRe: number,
-    theta: number
+    theta: number,
   ): UhpPoint {
     if (!isPositiveNumber(radius)) {
       throw new Error("Radius must be positive");
@@ -140,13 +140,13 @@ export class UhpGeometry {
 
     return this.pointFactory(
       radius * Math.cos(theta) + centerRe,
-      radius * Math.sin(theta)
+      radius * Math.sin(theta),
     );
   }
 
   geodesicWithPointAtInfinity(
     z: UhpPoint,
-    infinityFirst: boolean = false
+    infinityFirst: boolean = false,
   ): UhpGeodesic {
     const geodesic: UhpGeodesic = {
       isVertical: true,
@@ -164,14 +164,14 @@ export class UhpGeometry {
           this.constants.INFINITY,
           highIntPoint,
           lowIntPoint,
-          z
+          z,
         );
       } else {
         geodesic.points.push(
           z,
           lowIntPoint,
           highIntPoint,
-          this.constants.INFINITY
+          this.constants.INFINITY,
         );
       }
     } else {
@@ -190,7 +190,7 @@ export class UhpGeometry {
 
   getGeodesicCenterAndRadius(
     z: UhpPoint,
-    w: UhpPoint
+    w: UhpPoint,
   ): { center: UhpPoint; radius: number } {
     const getRadius = (centerRe: number) => Math.hypot(z.re - centerRe, z.im);
 
@@ -252,25 +252,25 @@ export class UhpGeometry {
           this.pointFactory(z.re, 0),
           z,
           w,
-          this.constants.INFINITY
+          this.constants.INFINITY,
         );
       } else if (z.type === "boundary" && w.type === "interior") {
         geodesic.points.push(
           z,
           this.pointFactory(w.re, w.im / 2),
           w,
-          this.constants.INFINITY
+          this.constants.INFINITY,
         );
       } else if (z.type === "interior" && w.type === "boundary") {
         geodesic.points.push(
           w,
           this.pointFactory(z.re, z.im / 2),
           z,
-          this.constants.INFINITY
+          this.constants.INFINITY,
         );
       } else {
         throw new Error(
-          "Two distinct boundary points cannot form a vertical geodesic"
+          "Two distinct boundary points cannot form a vertical geodesic",
         );
       }
 
@@ -293,12 +293,12 @@ export class UhpGeometry {
       const oneQuarter = this.getPointOnGeodesic(
         radius,
         center.re,
-        0.25 * Math.PI
+        0.25 * Math.PI,
       );
       const threeQuarter = this.getPointOnGeodesic(
         radius,
         center.re,
-        0.75 * Math.PI
+        0.75 * Math.PI,
       );
 
       const points = zLeftOfW
@@ -384,7 +384,7 @@ export class UhpGeometry {
 
   geodesicFromBaseAndDirection(
     base: UhpPoint,
-    direction: ComplexNumber
+    direction: ComplexNumber,
   ): UhpGeodesic {
     if (direction.re === Infinity && direction.im === Infinity) {
       throw new Error("The point at infinity is not a valid direction vector");
@@ -408,12 +408,12 @@ export class UhpGeometry {
       const oneQuarterPoint = this.getPointOnGeodesic(
         radius,
         centerRe,
-        0.25 * Math.PI
+        0.25 * Math.PI,
       );
       const threeQuarterPoint = this.getPointOnGeodesic(
         radius,
         centerRe,
-        0.75 * Math.PI
+        0.75 * Math.PI,
       );
 
       return {
@@ -430,12 +430,12 @@ export class UhpGeometry {
     const pointLeftOfBase = this.getPointOnGeodesic(
       radius,
       centerRe,
-      (Math.PI + baseArg) / 2
+      (Math.PI + baseArg) / 2,
     );
     const pointRightOfBase = this.getPointOnGeodesic(
       radius,
       centerRe,
-      baseArg / 2
+      baseArg / 2,
     );
 
     return {
@@ -522,7 +522,7 @@ export class UhpGeometry {
 
   horocycleGivenBaseAndOnHor(
     basePoint: UhpPoint,
-    onHorPoint: UhpPoint
+    onHorPoint: UhpPoint,
   ): UhpHorocycle {
     if (basePoint.subType === "infinity") {
       return {
@@ -556,7 +556,7 @@ export class UhpGeometry {
   polygonArea(angles: number[]): number {
     return angles.reduce(
       (area, angle) => area - angle,
-      Math.PI * (angles.length - 2)
+      Math.PI * (angles.length - 2),
     );
   }
 
