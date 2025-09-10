@@ -79,6 +79,10 @@ export class UpperHalfPlane {
     );
   }
 
+  point(z: [number, number]): UhpPoint {
+    return this.uhpFactory(z[0], z[1]);
+  }
+
   geodesic(z: [number, number], w: [number, number]): UhpGeodesic;
   geodesic(
     base: [number, number],
