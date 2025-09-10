@@ -31,6 +31,7 @@ yarn add hyp-geom
 
 ## Planned Features
 
+- Angle measure at intersection point of curves
 - Support for additional models including the [Poincare Disk model](https://en.wikipedia.org/wiki/Poincar%C3%A9_disk_model), the [Bertrami-Klein model](https://en.wikipedia.org/wiki/Beltrami%E2%80%93Klein_model), and the [Hyperboloid model](https://en.wikipedia.org/wiki/Hyperboloid_model)
 - Drawings and animations, e.g., the action of an isometry on a model
 - Support for fundamental domains, ultimately leading to 3d interactions with hyperbolic surfaces
