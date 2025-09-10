@@ -3,7 +3,6 @@ import {
   getComplexNumbers,
 } from "../../src/general-math/complex-numbers.js";
 import { MobiusTransformation } from "../../src/general-math/mobius-transformations.js";
-import { getUhpPoints, UhpPoint } from "../../src/upper-half-plane/points.js";
 
 export const randomReal = (
   upperBound: number = 1e5,
@@ -64,26 +63,18 @@ export const randomMobius = (
   return result;
 };
 
-export const randomUhpBoundaryPoint = (
+export const randomInvertibleMobius = (
   upperBound: number = 1e5,
   rtol: number = 1e-5,
   atol: number = 1e-8,
-): UhpPoint => {
-  const re = randomReal(upperBound);
-  return getUhpPoints(rtol, atol).factory(re, 0);
-};
-
-export const randomUhpInteriorPoint = (
-  upperBound: number = 1e5,
-  rtol: number = 1e-5,
-  atol: number = 1e-8,
-): UhpPoint => {
-  const re = randomReal(upperBound);
-  let im: number;
+  doReduce: boolean = false,
+): MobiusTransformation => {
+  const { ZERO } = getComplexNumbers(rtol, atol).constants;
+  let mobius: MobiusTransformation;
 
   do {
-    im = randomReal(upperBound, true);
-  } while (im === 0);
+    mobius = randomMobius(upperBound, rtol, atol, doReduce);
+  } while (mobius.determinant().isEqualTo(ZERO));
 
-  return getUhpPoints(rtol, atol).factory(re, im);
+  return mobius;
 };
