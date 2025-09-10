@@ -1,6 +1,6 @@
 To do:
 
-- Finish tests for upper-half-plane, util, and initializers
+- Finish tests for upper-half-plane
 - Make this readme actually useful and informative
 - Write api documentation
 - Write tex file with proofs/computations
