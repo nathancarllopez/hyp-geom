@@ -1,7 +1,6 @@
 # hyp-geom
 
-A TypeScript library for working with hyperbolic geometry.  
-This package provides geometric tools for the [upper half plane model](https://en.wikipedia.org/wiki/Poincar%C3%A9_half-plane_model) of the hyperbolic plane.
+A TypeScript library for working with hyperbolic geometry. This package provides geometric tools for the [upper half plane model](https://en.wikipedia.org/wiki/Poincar%C3%A9_half-plane_model) of the hyperbolic plane.
 
 [![npm version](https://img.shields.io/npm/v/hyp-geom.svg)](https://www.npmjs.com/package/hyp-geom)
 [![License](https://img.shields.io/github/license/nathancarllopez/hyp-geom.svg)](./LICENSE)
@@ -24,10 +23,8 @@ yarn add hyp-geom
 
 ## Features
 - Distance and angle calculations
-- Formulas and information for shapes including geodesics (lines), circles, horocycles, and polygons
+- Formulas and information for curves/shapes including geodesics (lines), circles, horocycles, and polygons
 - Hyperbolic isometries as Möbius transformations, either by specifying the coordinates of the corresponding matrix or by choosing from one of the three types (hyperbolic, elliptic, or parabolic)
-- Written in TypeScript with type definitions included
-- Lightweight and framework-agnostic
 
 ---
 
@@ -66,7 +63,7 @@ See [examples](./examples) for more usage demonstrations.
 
 ## Documentation
 - [API Reference](./docs/api.md): Method signatures and usage
-- [Mathematical Background (PDF)](./docs/math-background.pdf): Derivations and theory
+- [Mathematical Background (PDF)](./docs/hyp-geom-background.pdf): Derivations and theory
 
 ---
 
@@ -81,8 +78,7 @@ The [examples](./examples) folder contains runnable TypeScript snippets showing:
 ---
 
 ## Contributing
-Contributions, issues, and feature requests are welcome!  
-If you’d like to add functionality, improve docs, or suggest enhancements, please open an issue or submit a pull request.  
+Contributions, issues, and feature requests are welcome! If you’d like to add functionality, improve docs, or suggest enhancements, please open an issue or submit a pull request.  
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
