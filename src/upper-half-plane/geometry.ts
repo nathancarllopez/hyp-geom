@@ -561,6 +561,10 @@ export class UhpGeometry {
   }
 
   polygonFromVertices(vertices: UhpPoint[]): UhpPolygon {
+    if (vertices.length < 3) {
+      throw new Error("At least three vertices are needed to make a polygon");
+    }
+
     const angles: number[] = [];
     const sides: UhpGeodesicSegment[] = [];
 
