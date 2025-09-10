@@ -197,4 +197,8 @@ export class ComplexNumber implements ComplexNumberInterface {
       this._atol,
     );
   }
+
+  clone(): ComplexNumber {
+    return new ComplexNumber(this.re, this.im, this._rtol, this._atol);
+  }
 }
