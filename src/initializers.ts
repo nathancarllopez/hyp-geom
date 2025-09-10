@@ -1,6 +1,6 @@
-import { getComplexNumbers } from "../general-math/complex-numbers.js";
-import { UhpGeometry } from "./geometry.js";
-import { getUhpPoints } from "./points.js";
+import { getComplexNumbers } from "./general-math/complex-numbers.js";
+import { UhpGeometry } from "./upper-half-plane/geometry.js";
+import { getUhpPoints } from "./upper-half-plane/points.js";
 
 export function initializeUhpPrivateFields(
   rtol: number = 1e-5,
