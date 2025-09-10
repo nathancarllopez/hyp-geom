@@ -18,7 +18,6 @@ export function getUhpPoints(
       ONE: new UhpPoint(1, 0, rtol, atol),
       NEGONE: new UhpPoint(-1, 0, rtol, atol),
       I: new UhpPoint(0, 1, rtol, atol),
-      NEGI: new UhpPoint(0, -1, rtol, atol),
       INFINITY: new UhpPoint(Infinity, Infinity, rtol, atol),
     },
     factory: (re: number, im: number) => {
