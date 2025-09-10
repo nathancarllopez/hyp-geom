@@ -3,7 +3,7 @@ import {
   getMobiusTranformations,
   MobiusTransformation,
 } from "../general-math/mobius-transformations.js";
-import { anglesEquivalent, isPositiveNumber, nearlyEqual } from "../util.js";
+import { anglesEquivalent, isPointArray, isPositiveNumber, nearlyEqual } from "../util.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,
@@ -272,7 +272,19 @@ export class UhpIsometry extends MobiusTransformation {
     return new UhpIsometry(mobInverse.coeffs, this._rtol, this._atol);
   }
 
-  apply(z: UhpPoint): UhpPoint {
+  apply(z: [number, number]): UhpPoint;
+  apply(z: UhpPoint): UhpPoint;
+  apply(arg: [number, number] | UhpPoint) {
+    let z: UhpPoint;
+
+    if (isPointArray(arg)) {
+      z = this.uhpFactory(arg[0], arg[1]);
+    } else if (arg instanceof UhpPoint) {
+      z = arg;
+    } else {
+      throw new Error("Invalid arguments for apply");
+    }
+
     if (z.subType === "infinity") {
       const [a, , c] = this.coeffs;
 
