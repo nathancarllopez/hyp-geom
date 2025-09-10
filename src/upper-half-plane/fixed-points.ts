@@ -23,7 +23,7 @@ export function getUhpFixedPoints(
 
   const fPointFormula = (plus: boolean = true): UhpPoint => {
     const discriminant = tr ** 2 - 4;
-    let rootTerm = factory(discriminant, 0).nthRoot();
+    let rootTerm = factory(discriminant, 0).principalNthRoot();
     if (!plus) rootTerm = rootTerm.scale(-1);
 
     const numerator = a.subtract(d).add(rootTerm);

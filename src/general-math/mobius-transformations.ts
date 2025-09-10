@@ -110,7 +110,7 @@ export class MobiusTransformation {
       return this;
     }
 
-    const sqrtDet = det.nthRoot();
+    const sqrtDet = det.principalNthRoot();
     const reducedCoeffs = this.coeffs.map((coeff) => coeff.divide(sqrtDet));
 
     return new MobiusTransformation(reducedCoeffs, this._rtol, this._atol);
