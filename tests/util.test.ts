@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { randomReal } from "./helpers/random.js";
-import { isPositiveNumber, isPointArray, nearlyEqual, anglesEquivalent } from "../src/util.js";
+import {
+  isPositiveNumber,
+  isPointArray,
+  nearlyEqual,
+  anglesEquivalent,
+} from "../src/util.js";
 
 describe("Utility functions", () => {
   describe("isPositiveNumber", () => {
@@ -18,7 +23,7 @@ describe("Utility functions", () => {
     it("returns false if given input is not a number or is not positive", () => {
       expect(isPositiveNumber(-3)).toBe(false);
       expect(isPositiveNumber(NaN)).toBe(false);
-      expect(isPositiveNumber({ foo: 'bar' })).toBe(false);
+      expect(isPositiveNumber({ foo: "bar" })).toBe(false);
       expect(isPositiveNumber([1, 2, 3])).toBe(false);
       expect(isPositiveNumber(null)).toBe(false);
       expect(isPositiveNumber(undefined)).toBe(false);
