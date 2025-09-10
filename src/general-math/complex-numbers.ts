@@ -4,7 +4,6 @@ interface ComplexNumberInterface {
   re: number;
   im: number;
   modulus: number;
-  argument: number | null; // Is null when complex number is infinity
 }
 
 export function getComplexNumbers(
@@ -37,7 +36,6 @@ export class ComplexNumber implements ComplexNumberInterface {
   readonly re: number;
   readonly im: number;
   readonly modulus: number;
-  readonly argument: number | null;
   public _rtol: number;
   public _atol: number;
 
@@ -59,11 +57,10 @@ export class ComplexNumber implements ComplexNumberInterface {
         );
       }
     }
-
+    
     this.re = re;
     this.im = im;
     this.modulus = Math.hypot(re, im);
-    this.argument = infiniteInputs ? null : Math.atan2(im, re);
     this._rtol = rtol;
     this._atol = atol;
   }
@@ -90,6 +87,10 @@ export class ComplexNumber implements ComplexNumberInterface {
   isEqualTo(w: ComplexNumber): boolean {
     if (this.re === Infinity || this.im === Infinity) {
       return w.re === Infinity && w.im === Infinity;
+    }
+
+    if (w.re === Infinity || w.im === Infinity) {
+      return this.re === Infinity && this.im === Infinity;
     }
 
     return (
@@ -147,26 +148,37 @@ export class ComplexNumber implements ComplexNumberInterface {
     return this.subtract(w).modulus;
   }
 
+  // Via the dot product
   angleBetween(w: ComplexNumber): number {
-    const arg1 = this.argument;
-    const arg2 = w.argument;
-
-    if (arg1 === null || arg2 === null) {
-      throw new Error("Cannot find angle with infinity");
+    const infinity = new ComplexNumber(Infinity, Infinity, this._rtol, this._atol);
+    if (this.isEqualTo(infinity) || w.isEqualTo(infinity)) {
+      throw new Error("Cannot find an angle with infinity");
     }
 
-    return Math.abs(arg1 - arg2);
+    const denominator = this.modulus * w.modulus;
+    if (nearlyEqual(denominator, 0, this._rtol, this._atol)) {
+      throw new Error("Cannot find an angle with zero");
+    }
+
+    const numerator = this.re * w.re + this.im * w.im;
+    const cosTheta = Math.max(-1, Math.min(1, numerator / denominator));
+
+    return Math.acos(cosTheta);
   }
 
-  nthRoot(n: number = 2): ComplexNumber {
-    if (this.argument === null) {
+  // Right now this is only ever used to take the square root of numbers I expect to be real. If this ever gets used more robustly, I should revisit this.
+  principalNthRoot(n: number = 2): ComplexNumber {
+    const infinity = new ComplexNumber(Infinity, Infinity, this._rtol, this._atol);
+    if (this.isEqualTo(infinity)) {
       throw new Error("Cannot take a root of infinity");
     }
 
-    if (n === 0) return new ComplexNumber(1, 0, this._rtol, this._atol);
+    if (n === 0) {
+      return new ComplexNumber(1, 0, this._rtol, this._atol);
+    }
 
     const rootModulus = Math.pow(this.modulus, 1 / n);
-    const rootArg = this.argument / n;
+    const rootArg = Math.atan2(this.im, this.re) / n; // If this.im is not close to zero, then this might have issues
 
     return new ComplexNumber(
       rootModulus * Math.cos(rootArg),
