@@ -3,7 +3,12 @@ import {
   getMobiusTranformations,
   MobiusTransformation,
 } from "../general-math/mobius-transformations.js";
-import { anglesEquivalent, isPointArray, isPositiveNumber, nearlyEqual } from "../util.js";
+import {
+  anglesEquivalent,
+  isPointArray,
+  isPositiveNumber,
+  nearlyEqual,
+} from "../util.js";
 import {
   moveGeodesicToImAxis,
   movePointToI,

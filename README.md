@@ -22,6 +22,7 @@ yarn add hyp-geom
 ---
 
 ## Features
+
 - Distance and angle calculations
 - Formulas and information for curves/shapes including geodesics (lines), circles, horocycles, and polygons
 - Hyperbolic isometries as Möbius transformations, either by specifying the coordinates of the corresponding matrix or by choosing from one of the three types (hyperbolic, elliptic, or parabolic)
@@ -29,6 +30,7 @@ yarn add hyp-geom
 ---
 
 ## Planned Features
+
 - Support for additional models including the [Poincare Disk model](https://en.wikipedia.org/wiki/Poincar%C3%A9_disk_model), the [Bertrami-Klein model](https://en.wikipedia.org/wiki/Beltrami%E2%80%93Klein_model), and the [Hyperboloid model](https://en.wikipedia.org/wiki/Hyperboloid_model)
 - Drawings and animations, e.g., the action of an isometry on a model
 - Support for fundamental domains, ultimately leading to 3d interactions with hyperbolic surfaces
@@ -54,7 +56,6 @@ console.log(circle);
 //  eucCenter: { re: 0, im: (e + 1 / e) / 2 },
 //  eucRadius: (e - 1 / e) / 2
 // }
-
 ```
 
 See [examples](./examples) for more usage demonstrations.
@@ -62,13 +63,16 @@ See [examples](./examples) for more usage demonstrations.
 ---
 
 ## Documentation
+
 - [API Reference](./docs/api.md): Method signatures and usage
 - [Mathematical Background (PDF)](./docs/hyp-geom-background.pdf): Derivations and theory
 
 ---
 
 ## Examples
+
 The [examples](./examples) folder contains runnable TypeScript snippets showing:
+
 - Computing distances and angles
 - Working with hyperbolic curves (geodesics, circles, etc.)
 - Basic translations, rotations, and reflections
@@ -78,11 +82,13 @@ The [examples](./examples) folder contains runnable TypeScript snippets showing:
 ---
 
 ## Contributing
-Contributions, issues, and feature requests are welcome! If you’d like to add functionality, improve docs, or suggest enhancements, please open an issue or submit a pull request.  
+
+Contributions, issues, and feature requests are welcome! If you’d like to add functionality, improve docs, or suggest enhancements, please open an issue or submit a pull request.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## License
+
 MIT © [Nathan Lopez](https://github.com/nathancarllopez)
