@@ -71,6 +71,14 @@ export class UpperHalfPlane {
     );
   }
 
+  angle(p: [number, number], q: [number, number], r: [number, number]): number {
+    return this.geometry.angleFromThreePoints(
+      this.uhpFactory(p[0], p[1]),
+      this.uhpFactory(q[0], q[1]),
+      this.uhpFactory(r[0], r[1]),
+    );
+  }
+
   geodesic(z: [number, number], w: [number, number]): UhpGeodesic;
   geodesic(
     base: [number, number],
