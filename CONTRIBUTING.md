@@ -6,7 +6,7 @@ Thanks for your interest in contributing!
 
 - Fork the repo and create a new branch
 - Make your changes
-- Run tests (if any)
+- Add new tests and run existing tests
 - Submit a pull request
 
 ## Reporting issues
