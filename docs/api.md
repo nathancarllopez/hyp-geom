@@ -10,7 +10,7 @@ This document describes the public API of the `hyp-geom` library.
 - [UpperHalfPlane](#upperhalfplane)  
   - [Constructor](#constructor)  
   - [Properties](#properties)
-  - [Types](#upperhalfplane-types)
+  - [Types](#types)
   - [Methods](#methods)  
     - [Points](#points)  
     - [Distance and Angles](#distance-and-angles)  
@@ -20,6 +20,10 @@ This document describes the public API of the `hyp-geom` library.
     - [Polygons](#polygons)  
     - [Isometries](#isometries)  
     - [Conjugacy](#conjugacy)  
+- [PoincareDisk](#poincaredisk)
+  - [Constructor](#constructor)  
+  - [Properties](#properties)
+  - [Types](#types)
 
 ---
 
@@ -192,3 +196,27 @@ uhp.areConjugate(m: UhpIsometry, n: UhpIsometry): UhpIsometry | null
 
 Checks if two isometries are conjugate.  
 Returns a conjugating isometry or `null`.
+
+---
+
+## PoincareDisk
+
+Coming soon
+
+### Constructor
+
+Blah blah
+
+---
+
+### Properties
+
+blah blah
+
+---
+
+### Types
+
+hergy dergy
+
+---
