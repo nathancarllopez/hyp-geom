@@ -9,14 +9,14 @@ This document describes the public API of the `hyp-geom` library.
 - [Constants](#constants)
 - [Base Classes](#base-classes)
   - [ComplexNumber](#complexnumber)
-  - [MobiusTransformation](#mobiustransformation)
+  - [MöbiusTransformation](#Möbiustransformation)
 - [UpperHalfPlane](#upperhalfplane)
-  - [UHP Types](#uhp-types)
   - [UHP Constructor](#uhp-constructor)
+  - [UHP Types](#uhp-types)
   - [UHP Methods](#uhp-methods)
 - [PoincareDisk](#poincaredisk)
-  - [PD Types](#pd-types)
   - [PD Constructor](#pd-constructor)
+  - [PD Types](#pd-types)
   - [PD Methods](#pd-methods)
 
 ---
@@ -24,8 +24,8 @@ This document describes the public API of the `hyp-geom` library.
 ## Constants
 
 ```ts
-STANDARD_RELATIVE_TOLERANCE: number = 1e-5
-STANDARD_ABSOLUTE_TOLERANCE: number = 1e-8
+STANDARD_RELATIVE_TOLERANCE: number = 1e-5;
+STANDARD_ABSOLUTE_TOLERANCE: number = 1e-8;
 ```
 
 Default tolerances for geometric computations. Many of the classes take these as optional parameters, and all that do will throw an error if they are not positive.
@@ -59,6 +59,7 @@ new ComplexNumber(
 - `atol`: absolute tolerance
 
 Throws if
+
 - tolerances are not positive
 
 #### Fields
@@ -81,7 +82,7 @@ Throws if
 - `principalNthRoot(n: number): ComplexNumber` – principal root (default square root)
 - `clone(): ComplexNumber` – deep copy
 
-### MobiusTransformation
+### MöbiusTransformation
 
 Represents a Möbius transformation
 
@@ -92,7 +93,7 @@ determined by four complex coefficients a, b, c, and d.
 ### Constructor
 
 ```ts
-new MobiusTransformation(
+new MöbiusTransformation(
   coeffs: ComplexNumber[],   // must be length 4: [a, b, c, d]
   rtol: number = 1e-5,
   atol: number = 1e-8
@@ -104,6 +105,7 @@ new MobiusTransformation(
 - `atol`: absolute tolerance (must be positive)
 
 Throws if:
+
 - The coefficients array length is not 4
 - Both `c` and `d` are zero (invalid denominator)
 - Tolerances are not positive
@@ -116,13 +118,13 @@ Throws if:
 
 ### Key Methods
 
-- `isEqualTo(n: MobiusTransformation): boolean`: Compares two transformations by testing their action on 1, 0, and i. A Mobius transformation is determined by its action on three points.
+- `isEqualTo(n: MöbiusTransformation): boolean`: Compares two transformations by testing their action on 1, 0, and i. A Möbius transformation is determined by its action on three points.
 - `determinant(): ComplexNumber`: Returns ad - bc.
-- `clone(): MobiusTransformation`: Deep copy.
-- `reduce(): MobiusTransformation`: Normalizes coefficients so that determinant = 1.
-- `compose(n: MobiusTransformation, doReduce = false): MobiusTransformation`: Returns the composition this ∘ n.
-- `conjugate(n: MobiusTransformation, doReduce = false): MobiusTransformation`: Returns n⁻¹ ∘ this ∘ n. Throws if n is non-invertible.
-- `inverse(doReduce = false): MobiusTransformation`: Returns the inverse transformation. Throws if determinant is zero.
+- `clone(): MöbiusTransformation`: Deep copy.
+- `reduce(): MöbiusTransformation`: Normalizes coefficients so that determinant = 1, or returns the a clone if the given transformation is not invertible.
+- `compose(n: MöbiusTransformation, doReduce = false): MöbiusTransformation`: Returns the composition this ∘ n.
+- `conjugate(n: MöbiusTransformation, doReduce = false): MöbiusTransformation`: Returns n⁻¹ ∘ this ∘ n. Throws if n is non-invertible.
+- `inverse(doReduce = false): MöbiusTransformation`: Returns the inverse transformation. Throws if determinant is zero.
 - `apply(z: ComplexNumber): ComplexNumber`: Applies the transformation to a complex number, handling the point at infinity.
 
 ---
@@ -130,6 +132,24 @@ Throws if:
 ## UpperHalfPlane
 
 Represents the hyperbolic plane in the upper half-plane (UHP) model. Provides methods for constructing points and curves, as well as isometries and their classifications.
+
+---
+
+### UHP Constructor
+
+```ts
+new UpperHalfPlane(
+  rtol: number = STANDARD_RELATIVE_TOLERANCE,
+  atol: number = STANDARD_ABSOLUTE_TOLERANCE
+)
+```
+
+- `rtol`: relative tolerance
+- `atol`: absolute tolerance
+
+Throws if:
+
+- Tolerances are not positive
 
 ---
 
@@ -142,6 +162,7 @@ The following are used as parameters or are return values for some of the method
 A class representing a point in the Upper Half-Plane model, extending `ComplexNumber`.
 
 **Fields**
+
 - `type`: `"interior"` or `"boundary"` – point classification
 - `subType?`: `"on-real-line"` or `"infinity"` – further classification if boundary
 - **Interior points**: finite with `im > 0`
@@ -161,7 +182,7 @@ type UhpGeodesic = {
 Represents a complete geodesic (vertical line or semicircle orthogonal to the real axis).
 
 - `center`: A UhpPoint of type `interior` or, if isVertical is true, the point at infinity
-- `readius`:  Distance between center and any point on the geodesic, Infinity if isVertical
+- `readius`: Distance between center and any point on the geodesic, Infinity if isVertical
 
 #### UhpGeodesicSegment
 
@@ -214,11 +235,11 @@ Represents a horocycle, i.e., a circle tangent to the boundary of the hyperbolic
 - `onHorPoint`: A point on the horocycle.
 - `center`: The (Euclidean) center of the horocycle if `basePoint` is not infinity, infinity otherwise.
 - `eucRadius`: The (Euclidean) radius of the horocycle if `basePoint` is not infinity, infinity otherwise.
- 
- #### UhpPolygon
 
- ```ts
- type UhpPolygon = {
+#### UhpPolygon
+
+```ts
+type UhpPolygon = {
   vertices: UhpPoint[];
   sides: UhpGeodesicSegment[];
   angles: number[];
@@ -248,7 +269,7 @@ The possible fixed points of a `UhpIsometry`, see below
 
 #### UhpIsometry
 
-Represents a(n orientation preserving) Möbius transformation that preserves distances in the Upper Half Plane. Isometries come in three types: hyperbolic (translations), elliptic (rotations), or parabolic ("rotations" around a boundary point)
+A class epresenting a(n orientation preserving) Möbius transformation that preserves distances in the Upper Half Plane. Isometries come in three types: hyperbolic (translations), elliptic (rotations), or parabolic ("rotations" around a boundary point)
 
 **Fields**
 
@@ -270,23 +291,6 @@ Represents a(n orientation preserving) Möbius transformation that preserves dis
 
 ---
 
-### UHP Constructor
-
-```ts
-new UpperHalfPlane(
-  rtol: number = STANDARD_RELATIVE_TOLERANCE,
-  atol: number = STANDARD_ABSOLUTE_TOLERANCE
-)
-```
-
-- `rtol`: relative tolerance (must be positive)  
-- `atol`: absolute tolerance (must be positive)
-
-Throws if:
-- Tolerances are not positive
-
----
-
 ### UHP Methods
 
 #### Points
@@ -295,64 +299,106 @@ Throws if:
 point(arg: [number, number] | UhpPoint): UhpPoint
 ```
 
-Creates a point in the UHP model.
+Creates a point.
 
-- `arg`: real and complex part, or a UhpPoint
+- `arg`: point, either as a real and imaginary part or as a UhpPoint
 
 ---
 
-#### Distance and Angles
+#### Distance
 
 ```ts
-uhp.distance(z: [number, number], w: [number, number]): number
-uhp.angle(p: [number, number], q: [number, number], r: [number, number]): number
+distance(
+  z: UhpPoint | [number, number],
+  w: UhpPoint | [number, number]
+): number
 ```
 
-- `distance`: hyperbolic distance between two points  
-- `angle`: angle ∠PQR at `q` (in radians)
+Computes the distance between two points.
+
+- `z`, `w`: points, either as a real and imaginary part or as a UhpPoint
+
+---
+
+#### Angles
+
+```ts
+angle(
+  p: UhpPoint | [number, number],
+  q: UhpPoint | [number, number],
+  r: UhpPoint | [number, number]
+): number
+```
+
+Computes the angle (in radians) made by three points, i.e., the angle of intersection at `q` of the geodesic between `p` and `q` and the geodesic between `q` and `r`.
+
+- `p`, `q`, `r`: points, either as a real and imaginary part or as a UhpPoint
 
 ---
 
 #### Geodesics
 
 ```ts
-uhp.geodesic(z: [number, number], w: [number, number]): UhpGeodesic
-uhp.geodesic(base: [number, number], direction: { x: number; y: number }): UhpGeodesic
+geodesic(
+  z: [number, number] | UhpPoint,
+  w: [number, number] | UhpPoint
+): UhpGeodesic;
+geodesic(
+  base: [number, number] | UhpPoint,
+  direction: { x: number; y: number }
+): UhpGeodesic;
 ```
 
-Constructs geodesics through points or from a base point and direction.
+Constructs a geodesic. Accepts either a pair of points or a point and a direction.
+
+- `z`, `w`, `base`: points, either as a real and imaginary part or as a UhpPoint
+- `direction`: a vector providing a direction to draw the geodesic from `base` -- `x` and `y` can be any two finite values.
 
 ---
 
 #### Circles
 
 ```ts
-uhp.circle(center: [number, number], radius: number): UhpCircle
-uhp.circle(center: [number, number], bdryPoint: [number, number]): UhpCircle
+circle(center: [number, number] | UhpPoint, radius: number): UhpCircle;
+circle(
+  center: [number, number] | UhpPoint,
+  bdryPoint: [number, number] | UhpPoint
+): UhpCircle;
 ```
 
-Constructs hyperbolic circles from a center and radius or a center and a point on the boundary of the circle.
+Constructs a hyperbolic circle. Accepts either a center and a radius or a center and a point on the circle.
+
+- `center`, `bdryPoint`: points, either as a real and imaginary part or as a UhpPoint
+- `radius`: a positive number representing the (hyperbolic) radius of the circle
 
 ---
 
 #### Horocycles
 
 ```ts
-uhp.horocycle(center: [number, number]): UhpHorocycle
-uhp.horocycle(base: [number, number], onHorPoint: [number, number]): UhpHorocycle
+horocycle(center: [number, number] | UhpPoint): UhpHorocycle;
+horocycle(
+  base: [number, number] | UhpPoint,
+  onHorPoint: [number, number] | UhpPoint
+): UhpHorocycle;
 ```
 
-Constructs horocycles either from an interior center or from a boundary base point and a point on the horocycle.
+Constructs a horocycle. Accepts either an interior point as the (Euclidean) center of the horocycle, or a boundary point as the base and a point on the horocycle.
+
+- `center`, `onHorPoint`: an interior point (i.e., the real part is finite and the imaginary part is positive), either as a real and imaginary part or as a UhpPoint
+- `base`: a boundary point (i.e., the real part is finite and the imaginary part is zero or both are infinity), either as a real and imaginary part or as a UhpPoint
 
 ---
 
 #### Polygons
 
 ```ts
-uhp.polygon(vertices: [number, number][]): UhpPolygon
+polygon(vertices: [number, number][] | UhpPoint[]): UhpPolygon
 ```
 
-Constructs a hyperbolic polygon from vertices, throws if less than three vertices are given.
+Constructs a hyperbolic polygon from vertices.
+
+- `vertices`: array of vertices, either as a real and imaginary part or as a UhpPoint. Throws if the length of `vertices` is less than 3.
 
 ---
 
@@ -361,44 +407,89 @@ Constructs a hyperbolic polygon from vertices, throws if less than three vertice
 **General**
 
 ```ts
-uhp.isometry(coeffs: [number, number][]): UhpIsometry
+isometry(coeffs: [number, number][] | ComplexNumber[]): UhpIsometry
 ```
 
-Creates an isometry from Möbius coefficients (complex numbers). Throws if the underlying mobius transformation does not have a positive determinant.
+Creates an isometry from complex coefficients, and returns an isometry with reduced coefficients, i.e., scaled so that the determinant is 1.
+
+- `coeffs`: array of coefficients, either as a real and imaginary part or as a ComplexNumber.
+
+Throws if:
+- The array is not exactly length 4.
+- The determinant of the resulting Möbius transformation is not positive.
 
 **Elliptic**
 
 ```ts
-uhp.elliptic(center: [number, number], theta: number): UhpIsometry
+elliptic(center: [number, number] | UhpPoint, theta: number): UhpIsometry
 ```
 
-Creates an elliptic isometry of angle `theta` about `center`. Throws
+Creates an elliptic isometry (rotation) of angle `theta` about `center`.
 
-**Hyperbolic** (overloaded)
+- `center`: an interior point (i.e., the real part is finite and the imaginary part is positive), either as a real and imaginary part or as a UhpPoint
+- `theta`: the angle by which to rotate, any finite number
+
+**Hyperbolic**
 
 ```ts
-uhp.hyperbolic(z: [number, number], w: [number, number]): UhpIsometry
-uhp.hyperbolic(z: [number, number], w: [number, number], distance: number): UhpIsometry
-uhp.hyperbolic(base: [number, number], direction: { x: number; y: number }): UhpIsometry
-uhp.hyperbolic(base: [number, number], direction: { x: number; y: number }, distance: number): UhpIsometry
+hyperbolic(
+  z: [number, number] | UhpPoint,
+  w: [number, number] | UhpPoint
+): UhpIsometry;
+hyperbolic(
+  z: [number, number] | UhpPoint,
+  w: [number, number] | UhpPoint,
+  distance: number
+): UhpIsometry;
+hyperbolic(
+  base: [number, number] | UhpPoint,
+  direction: { x: number; y: number },
+  distance: number
+): UhpIsometry;
+hyperbolic(
+  base: [number, number] | UhpPoint,
+  direction: { x: number; y: number }
+): UhpIsometry;
 ```
 
-Creates hyperbolic translations using different input signatures.
+Creates a hyperbolic isometry (translation).
+
+First overload:
+- `z`, `w`: interior points (i.e., the real part is finite and the imaginary part is positive), either as a real and imaginary part or as a UhpPoint
+
+Second overload:
+- `z`, `w`: points, either as a real and imaginary part or as a UhpPoint
+- `distance`: the distance to translate from `z` toward `w`. If distance is negative, then the translation occurs from `w` toward `z`
+
+Third overload
+- `base`: point, either as a real and imaginary part or as a UhpPoint
+- `direction`: a vector providing a direction to draw the geodesic from `base` toward
+- `distance`: the distance to translate from `base` in `direction`; if `distance` is negative, then the translation occurs in the opposite direction
+
+Fourth overload:
+- `base`: point, either as a real and imaginary part or as a UhpPoint
+- `direction`: a vector providing a direction to draw the geodesic from `base` toward; translates a distance equal to the length of the direction vector
 
 **Parabolic**
 
 ```ts
-uhp.parabolic(bdry: [number, number], displacement: number): UhpIsometry
+parabolic(
+  bdry: [number, number] | UhpPoint,
+  displacement: number
+): UhpIsometry
 ```
 
-Creates a parabolic isometry fixing a boundary point.
+Creates a parabolic isometry ("rotation" about a boundary point)
+
+- `bdry`: the boundary point (i.e., the real part is finite and the imaginary part is 0 or both are infinite) that the isometry fixes, either as a real and imaginary part or as a UhpPoint
+- `displacement`: the amount of "rotation" that occurs
 
 ---
 
 #### Conjugacy
 
 ```ts
-uhp.areConjugate(m: UhpIsometry, n: UhpIsometry): UhpIsometry | null
+areConjugate(m: UhpIsometry, n: UhpIsometry): UhpIsometry | null
 ```
 
 Checks if two isometries are conjugate. Returns a conjugating isometry or `null` if they are not conjugate.
@@ -409,15 +500,11 @@ Checks if two isometries are conjugate. Returns a conjugating isometry or `null`
 
 Coming soon
 
+---
+
 ### PD Constructor
 
 Blah blah
-
----
-
-### PD Properties
-
-blah blah
 
 ---
 
