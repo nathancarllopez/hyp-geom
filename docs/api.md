@@ -7,23 +7,18 @@ This document describes the public API of the `hyp-geom` library.
 ## Table of Contents
 
 - [Constants](#constants)
+- [Overlapping Features](#overlapping-features)
+  - [Base Classes](#base-classes)
+    - [ComplexNumber](#complexnumber)
+    - [MobiusTransformation](#mobiustransformation)
+  - [Constructors](#constructors)
+  - [Properties](#properties)
 - [UpperHalfPlane](#upperhalfplane)
-  - [Constructor](#upperhalfplane-constructor)
-  - [Properties](#upperhalfplane-properties)
-  - [Types](#upperhalfplane-types)
-  - [Methods](#upperhalfplane-methods)
-    - [Points](#upperhalfplane-points)
-    - [Distance and Angles](#upperhalfplane-distance-and-angles)
-    - [Geodesics](#upperhalfplane-geodesics)
-    - [Circles](#upperhalfplane-circles)
-    - [Horocycles](#upperhalfplane-horocycles)
-    - [Polygons](#upperhalfplane-polygons)
-    - [Isometries](#upperhalfplane-isometries)
-    - [Conjugacy](#upperhalfplane-conjugacy)
+  - [UHP Types](#uhp-types)
+  - [UHP Methods](#uhp-methods)
 - [PoincareDisk](#poincaredisk)
-  - [Constructor](#poincaredisk-constructor)
-  - [Properties](#poincaredisk-properties)
-  - [Types](#poincaredisk-types)
+  - [PD Types](#pd-types)
+  - [PD Methods](#pd-methods)
 
 ---
 
@@ -34,19 +29,120 @@ STANDARD_RELATIVE_TOLERANCE: number = 1e-5
 STANDARD_ABSOLUTE_TOLERANCE: number = 1e-8
 ```
 
-Default tolerances for geometric computations.
+Default tolerances for geometric computations. Many of the classes take these as optional parameters, and all that do will throw an error if they are not positive.
+
+See the functions `nearlyEqual` and `anglesEquivalent` in src/util.ts to see how these values are used.
 
 ---
 
-## UpperHalfPlane
+## Overlapping Features
 
-Represents the hyperbolic plane in the upper half-plane (UHP) model.  
-Provides methods for constructing points, geodesics, circles, horocycles, polygons, and isometries.
+Each of the classes in the API have some similar features, so we list them here instead of in each section below
 
-### Constructor
+### Base Classes
+
+These classes are extended by the exposed api
+
+#### ComplexNumber
+
+Represents a complex number with relative/absolute tolerance checks.
+
+##### Constructor
+
+```ts
+new ComplexNumber(
+  re: number = 0,
+  im: number = 0,
+  rtol: number = 1e-5,
+  atol: number = 1e-8,
+)
+```
+
+- `re: number` – real part
+- `im: number` – imaginary part
+- `rtol`: relative tolerance
+- `atol`: absolute tolerance
+
+Throws if
+- tolerances are not positive
+
+##### Fields
+
+- `re: number` – real part
+- `im: number` – imaginary part
+- `modulus: number` – Euclidean modulus √(re² + im²)
+- `rtol: number`: relative tolerance
+- `atol: number`: absolute tolerance
+
+##### Key Methods
+
+- `isEqualTo(w: ComplexNumber): boolean` – equality with tolerances
+- `add`, `subtract`, `multiply`, `divide` – arithmetic operations
+- `conjugate(): ComplexNumber` – reflection across the real axis
+- `inverse(): ComplexNumber` – multiplicative inverse
+- `scale(lambda: number): ComplexNumber` – scalar multiplication
+- `eucDistance(w: ComplexNumber): number` – Euclidean distance
+- `angleBetween(w: ComplexNumber): number` – angle (via dot product)
+- `principalNthRoot(n: number): ComplexNumber` – principal root (default square root)
+- `clone(): ComplexNumber` – deep copy
+
+---
+
+#### MobiusTransformation
+
+Represents a Möbius transformation
+
+z => (a*z + b) / (c*z + d)
+
+determined by four complex coefficients a, b, c, and d.
+
+#### Constructor
+
+```ts
+new MobiusTransformation(
+  coeffs: ComplexNumber[],   // must be length 4: [a, b, c, d]
+  rtol: number = 1e-5,
+  atol: number = 1e-8
+)
+```
+
+- `coeffs`: array of four `ComplexNumber` instances `[a, b, c, d]`
+- `rtol`: relative tolerance (must be positive)
+- `atol`: absolute tolerance (must be positive)
+
+Throws if:
+- The coefficients array length is not 4
+- Both `c` and `d` are zero (invalid denominator)
+- Tolerances are not positive
+
+#### Fields
+
+- `coeffs`: coefficients array of type `ComplexNumber[]`
+- `rtol: number`: relative tolerance
+- `atol: number`: absolute tolerance
+
+#### Key Methods
+
+- `isEqualTo(n: MobiusTransformation): boolean`: Compares two transformations by testing their action on 1, 0, and i. A Mobius transformation is determined by its action on three points.
+- `determinant(): ComplexNumber`: Returns ad - bc.
+- `clone(): MobiusTransformation`: Deep copy.
+- `reduce(): MobiusTransformation`: Normalizes coefficients so that determinant = 1.
+- `compose(n: MobiusTransformation, doReduce = false): MobiusTransformation`: Returns the composition this ∘ n.
+- `conjugate(n: MobiusTransformation, doReduce = false): MobiusTransformation`: Returns n⁻¹ ∘ this ∘ n. Throws if n is non-invertible.
+- `inverse(doReduce = false): MobiusTransformation`: Returns the inverse transformation. Throws if determinant is zero.
+- `apply(z: ComplexNumber): ComplexNumber`: Applies the transformation to a complex number, handling the point at infinity.
+
+---
+
+### Constructors
 
 ```ts
 new UpperHalfPlane(
+  rtol: number = STANDARD_RELATIVE_TOLERANCE,
+  atol: number = STANDARD_ABSOLUTE_TOLERANCE
+)
+
+new PoincareDisk(
   rtol: number = STANDARD_RELATIVE_TOLERANCE,
   atol: number = STANDARD_ABSOLUTE_TOLERANCE
 )
@@ -54,6 +150,8 @@ new UpperHalfPlane(
 
 - `rtol`: relative tolerance (must be positive)  
 - `atol`: absolute tolerance (must be positive)
+
+Throws if either tolerance is set to a non-positive value.
 
 ---
 
@@ -69,7 +167,15 @@ Throws if set to a non-positive value.
 
 ---
 
-### Types
+## UpperHalfPlane
+
+Represents the hyperbolic plane in the upper half-plane (UHP) model. Provides methods for constructing points and curves, as well as isometries and their classifications.
+
+We first list the return types and then the class methods.
+
+---
+
+### UHP Types
 
 These are returned by various methods:
 
@@ -82,7 +188,7 @@ These are returned by various methods:
 
 ---
 
-### Methods
+### UHP Methods
 
 #### Points
 
@@ -124,7 +230,7 @@ uhp.circle(center: [number, number], radius: number): UhpCircle
 uhp.circle(center: [number, number], bdryPoint: [number, number]): UhpCircle
 ```
 
-Constructs hyperbolic circles.
+Constructs hyperbolic circles from a center and radius or a center and a point on the boundary of the circle.
 
 ---
 
@@ -203,19 +309,25 @@ Returns a conjugating isometry or `null`.
 
 Coming soon
 
-### Constructor
+### PD Constructor
 
 Blah blah
 
 ---
 
-### Properties
+### PD Properties
 
 blah blah
 
 ---
 
-### Types
+### PD Types
+
+hergy dergy
+
+---
+
+### PD Methods
 
 hergy dergy
 
