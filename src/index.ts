@@ -21,6 +21,9 @@ import {
 } from "./upper-half-plane/types.js";
 import { isPointArray, isPositiveNumber } from "./util.js";
 
+export const STANDARD_RELATIVE_TOLERANCE: number = 1e-5;
+export const STANDARD_ABSOLUTE_TOLERANCE: number = 1e-8;
+
 export class UpperHalfPlane {
   private uhpFactory: (re: number, im: number) => UhpPoint;
   private complexFactory: (re: number, im: number) => ComplexNumber;
@@ -28,14 +31,17 @@ export class UpperHalfPlane {
   public _rtol: number;
   public _atol: number;
 
-  constructor(rtol: number = 1e-5, atol: number = 1e-8) {
+  constructor(
+    rtol: number = STANDARD_RELATIVE_TOLERANCE,
+    atol: number = STANDARD_ABSOLUTE_TOLERANCE
+  ) {
     if (!isPositiveNumber(rtol) || !isPositiveNumber(atol)) {
       throw new Error("Tolerances must be positive");
     }
 
     const { uhpFactory, complexFactory, geometry } = initializeUhpPrivateFields(
       rtol,
-      atol,
+      atol
     );
 
     this.uhpFactory = uhpFactory;
@@ -64,38 +70,50 @@ export class UpperHalfPlane {
     this._atol = newAtol;
   }
 
-  distance(z: [number, number], w: [number, number]): number {
-    return this.geometry.distance(
-      this.uhpFactory(z[0], z[1]),
-      this.uhpFactory(w[0], w[1]),
-    );
+  point(arg: [number, number] | UhpPoint): UhpPoint {
+    return isPointArray(arg) ? this.uhpFactory(arg[0], arg[1]) : arg;
   }
 
-  angle(p: [number, number], q: [number, number], r: [number, number]): number {
-    return this.geometry.angleFromThreePoints(
-      this.uhpFactory(p[0], p[1]),
-      this.uhpFactory(q[0], q[1]),
-      this.uhpFactory(r[0], r[1]),
-    );
+  distance(
+    arg1: UhpPoint | [number, number],
+    arg2: UhpPoint | [number, number]
+  ): number {
+    const z = isPointArray(arg1) ? this.uhpFactory(arg1[0], arg1[1]) : arg1;
+    const w = isPointArray(arg2) ? this.uhpFactory(arg2[0], arg2[1]) : arg2;
+
+    return this.geometry.distance(z, w);
   }
 
-  point(z: [number, number]): UhpPoint {
-    return this.uhpFactory(z[0], z[1]);
+  angle(
+    arg1: UhpPoint | [number, number],
+    arg2: UhpPoint | [number, number],
+    arg3: UhpPoint | [number, number]
+  ): number {
+    const p = isPointArray(arg1) ? this.uhpFactory(arg1[0], arg1[1]) : arg1;
+    const q = isPointArray(arg2) ? this.uhpFactory(arg2[0], arg2[1]) : arg2;
+    const r = isPointArray(arg3) ? this.uhpFactory(arg3[0], arg3[1]) : arg3;
+
+    return this.geometry.angleFromThreePoints(p, q, r);
   }
 
-  geodesic(z: [number, number], w: [number, number]): UhpGeodesic;
   geodesic(
-    base: [number, number],
-    direction: { x: number; y: number },
+    z: [number, number] | UhpPoint,
+    w: [number, number] | UhpPoint
   ): UhpGeodesic;
   geodesic(
-    arg1: [number, number],
-    arg2: [number, number] | { x: number; y: number },
+    base: [number, number] | UhpPoint,
+    direction: { x: number; y: number }
+  ): UhpGeodesic;
+  geodesic(
+    arg1: [number, number] | UhpPoint,
+    arg2: [number, number] | UhpPoint | { x: number; y: number }
   ): UhpGeodesic {
-    const uhp1 = this.uhpFactory(arg1[0], arg1[1]);
+    const uhp1 = isPointArray(arg1) ? this.uhpFactory(arg1[0], arg1[1]) : arg1;
 
-    if (isPointArray(arg2)) {
-      const uhp2 = this.uhpFactory(arg2[0], arg2[1]);
+    if (isPointArray(arg2) || arg2 instanceof UhpPoint) {
+      const uhp2 = isPointArray(arg2)
+        ? this.uhpFactory(arg2[0], arg2[1])
+        : arg2;
       return this.geometry.geodesicThroughPoints(uhp1, uhp2);
     }
 
@@ -111,34 +129,46 @@ export class UpperHalfPlane {
     throw new Error("Invalid arguments for geodesic");
   }
 
-  circle(center: [number, number], radius: number): UhpCircle;
-  circle(center: [number, number], bdryPoint: [number, number]): UhpCircle;
-  circle(center: [number, number], arg: number | [number, number]): UhpCircle {
-    const [reCenter, imCenter] = center;
+  circle(center: [number, number] | UhpPoint, radius: number): UhpCircle;
+  circle(
+    center: [number, number] | UhpPoint,
+    bdryPoint: [number, number] | UhpPoint
+  ): UhpCircle;
+  circle(
+    arg1: [number, number] | UhpPoint,
+    arg2: number | [number, number] | UhpPoint
+  ): UhpCircle {
+    const center = isPointArray(arg1)
+      ? this.uhpFactory(arg1[0], arg1[1])
+      : arg1;
 
-    if (typeof arg === "number") {
-      return this.geometry.circleCenterAndRadius(
-        this.uhpFactory(reCenter, imCenter),
-        arg,
-      );
+    if (typeof arg2 === "number") {
+      return this.geometry.circleCenterAndRadius(center, arg2);
     }
 
-    if (isPointArray(arg)) {
-      const [reBdryPoint, imBdryPoint] = arg;
-      return this.geometry.circleCenterAndBdryPoint(
-        this.uhpFactory(reCenter, imCenter),
-        this.uhpFactory(reBdryPoint, imBdryPoint),
-      );
+    if (isPointArray(arg2) || arg2 instanceof UhpPoint) {
+      const bdryPoint = isPointArray(arg2)
+        ? this.uhpFactory(arg2[0], arg2[1])
+        : arg2;
+      return this.geometry.circleCenterAndBdryPoint(center, bdryPoint);
     }
 
     throw new Error("Invalid arguments for circle");
   }
 
-  horocycle(center: [number, number]): UhpHorocycle;
-  horocycle(base: [number, number], onHorPoint: [number, number]): UhpHorocycle;
-  horocycle(arg1: [number, number], arg2?: [number, number]): UhpHorocycle {
+  horocycle(center: [number, number] | UhpPoint): UhpHorocycle;
+  horocycle(
+    base: [number, number] | UhpPoint,
+    onHorPoint: [number, number] | UhpPoint
+  ): UhpHorocycle;
+  horocycle(
+    arg1: [number, number] | UhpPoint,
+    arg2?: [number, number] | UhpPoint
+  ): UhpHorocycle {
     if (arg2 === undefined) {
-      const center = this.uhpFactory(arg1[0], arg1[1]);
+      const center = isPointArray(arg1)
+        ? this.uhpFactory(arg1[0], arg1[1])
+        : arg1;
 
       if (center.type === "boundary") {
         throw new Error("Center of horocycle should be an interior point");
@@ -147,41 +177,49 @@ export class UpperHalfPlane {
       return this.geometry.horocyleGivenCenter(center);
     }
 
-    const base = this.uhpFactory(arg1[0], arg1[1]);
-    const onHorPoint = this.uhpFactory(arg2[0], arg2[1]);
+    const base = isPointArray(arg1) ? this.uhpFactory(arg1[0], arg1[1]) : arg1;
+    const onHorPoint = isPointArray(arg2)
+      ? this.uhpFactory(arg2[0], arg2[1])
+      : arg2;
 
     if (base.type === "interior") {
       throw new Error(
-        "Base of horocycle cannot be inside the hyperbolic plane",
+        "Base of horocycle cannot be inside the hyperbolic plane"
       );
     }
 
     return this.geometry.horocycleGivenBaseAndOnHor(base, onHorPoint);
   }
 
-  polygon(vertices: [number, number][]): UhpPolygon {
-    const uhpVertices = vertices.map(([re, im]) => this.uhpFactory(re, im));
+  polygon(vertices: [number, number][] | UhpPoint[]): UhpPolygon {
+    const uhpVertices: UhpPoint[] = vertices.map((v) =>
+      isPointArray(v) ? this.uhpFactory(v[0], v[1]) : v
+    );
     return this.geometry.polygonFromVertices(uhpVertices);
   }
 
-  isometry(coeffs: [number, number][]): UhpIsometry {
-    const complexCoeffs = coeffs.map(([re, im]) => this.complexFactory(re, im));
+  isometry(coeffs: [number, number][] | ComplexNumber[]): UhpIsometry {
+    const complexCoeffs: ComplexNumber[] = coeffs.map((c) =>
+      isPointArray(c) ? this.complexFactory(c[0], c[1]) : c
+    );
     return new UhpIsometry(complexCoeffs, this._rtol, this._atol);
   }
 
-  elliptic(center: [number, number], theta: number): UhpIsometry {
-    const uhpCenter = this.uhpFactory(center[0], center[1]);
+  elliptic(center: [number, number] | UhpPoint, theta: number): UhpIsometry {
+    const uhpCenter = isPointArray(center)
+      ? this.uhpFactory(center[0], center[1])
+      : center;
     const moveCenterToI = movePointToI(
       uhpCenter,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
     const standard = standardElliptic(
       theta,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
 
     return standard.conjugate(moveCenterToI);
@@ -190,15 +228,15 @@ export class UpperHalfPlane {
   // Private hyperbolic functions for each overload signature below
   //#region
   private hyperbolicTwoInteriorPoints(
-    z: [number, number],
-    w: [number, number],
+    z: [number, number] | UhpPoint,
+    w: [number, number] | UhpPoint
   ): UhpIsometry {
-    const uhpZ = this.uhpFactory(z[0], z[1]);
-    const uhpW = this.uhpFactory(w[0], w[1]);
+    const uhpZ = isPointArray(z) ? this.uhpFactory(z[0], z[1]) : z;
+    const uhpW = isPointArray(w) ? this.uhpFactory(w[0], w[1]) : w;
 
     if (uhpZ.type === "boundary" || uhpW.type === "boundary") {
       throw new Error(
-        "Both inputs need to be inside the hyperbolic plane if no translation distance is provided",
+        "Both inputs need to be inside the hyperbolic plane if no translation distance is provided"
       );
     }
 
@@ -211,25 +249,25 @@ export class UpperHalfPlane {
       uhpW,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
     const distance = Math.log(moveToImAxis.apply(uhpW).im);
     const standard = standardHyperbolic(
       distance,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
 
     return standard.conjugate(moveToImAxis);
   }
   private hyperbolicTwoPointsAndDistance(
-    z: [number, number],
-    w: [number, number],
-    distance: number,
+    z: [number, number] | UhpPoint,
+    w: [number, number] | UhpPoint,
+    distance: number
   ): UhpIsometry {
-    const uhpZ = this.uhpFactory(z[0], z[1]);
-    const uhpW = this.uhpFactory(w[0], w[1]);
+    const uhpZ = isPointArray(z) ? this.uhpFactory(z[0], z[1]) : z;
+    const uhpW = isPointArray(w) ? this.uhpFactory(w[0], w[1]) : w;
 
     if (distance === 0 || uhpZ.isEqualTo(uhpW)) {
       return new UhpIsometry(null, this._rtol, this._atol); // Return the identity if the translation distance is zero or the points coincide
@@ -240,23 +278,25 @@ export class UpperHalfPlane {
       uhpW,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
     const standard = standardHyperbolic(
       distance,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
 
     return standard.conjugate(moveToImAxis);
   }
   private hyperbolicPointDirectionDistance(
-    base: [number, number],
+    base: [number, number] | UhpPoint,
     direction: { x: number; y: number },
-    distance: number,
+    distance: number
   ): UhpIsometry {
-    const uhpBase = this.uhpFactory(base[0], base[1]);
+    const uhpBase = isPointArray(base)
+      ? this.uhpFactory(base[0], base[1])
+      : base;
 
     if (distance === 0 || (direction.x === 0 && direction.y === 0)) {
       return new UhpIsometry(null, this._rtol, this._atol); // Return the identity if the translation distance is zero or the zero vector is given as the direction
@@ -268,45 +308,48 @@ export class UpperHalfPlane {
       complexDir,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
     const standard = standardHyperbolic(
       distance,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
 
     return standard.conjugate(moveToImAxis);
   }
   private hyperbolicPointDirection(
-    base: [number, number],
-    direction: { x: number; y: number },
+    base: [number, number] | UhpPoint,
+    direction: { x: number; y: number }
   ): UhpIsometry {
     const distance = Math.hypot(direction.x, direction.y);
     return this.hyperbolicPointDirectionDistance(base, direction, distance);
   }
   //#endregion
 
-  hyperbolic(z: [number, number], w: [number, number]): UhpIsometry;
   hyperbolic(
-    z: [number, number],
-    w: [number, number],
-    distance: number,
+    z: [number, number] | UhpPoint,
+    w: [number, number] | UhpPoint
   ): UhpIsometry;
   hyperbolic(
-    base: [number, number],
+    z: [number, number] | UhpPoint,
+    w: [number, number] | UhpPoint,
+    distance: number
+  ): UhpIsometry;
+  hyperbolic(
+    base: [number, number] | UhpPoint,
     direction: { x: number; y: number },
+    distance: number
   ): UhpIsometry;
   hyperbolic(
-    base: [number, number],
-    direction: { x: number; y: number },
-    distance: number,
+    base: [number, number] | UhpPoint,
+    direction: { x: number; y: number }
   ): UhpIsometry;
   hyperbolic(
-    arg1: [number, number],
-    arg2: [number, number] | { x: number; y: number },
-    arg3?: number,
+    arg1: [number, number] | UhpPoint,
+    arg2: [number, number] | UhpPoint | { x: number; y: number },
+    arg3?: number
   ): UhpIsometry {
     if (isPointArray(arg2)) {
       if (arg3 === undefined) {
@@ -320,15 +363,28 @@ export class UpperHalfPlane {
 
     if (arg3 === undefined) {
       // Overload 3
-      return this.hyperbolicPointDirection(arg1, arg2);
+      if ("x" in arg2 && "y" in arg2) {
+        return this.hyperbolicPointDirection(arg1, arg2);
+      }
+
+      throw new Error("Invalid second parameter");
     }
 
     // Overload 4
-    return this.hyperbolicPointDirectionDistance(arg1, arg2, arg3);
+    if ("x" in arg2 && "y" in arg2) {
+      return this.hyperbolicPointDirectionDistance(arg1, arg2, arg3);
+    }
+
+    throw new Error("Invalid second parameter");
   }
 
-  parabolic(bdry: [number, number], displacement: number): UhpIsometry {
-    const bdryPoint = this.uhpFactory(bdry[0], bdry[1]);
+  parabolic(
+    bdry: [number, number] | UhpPoint,
+    displacement: number
+  ): UhpIsometry {
+    const bdryPoint = isPointArray(bdry)
+      ? this.uhpFactory(bdry[0], bdry[1])
+      : bdry;
 
     if (bdryPoint.type === "interior") {
       throw new Error("Boundary point cannot be inside the hyperbolic plane");
@@ -340,13 +396,13 @@ export class UpperHalfPlane {
       identity,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
     const standard = standardParabolic(
       displacement,
       this.uhpFactory,
       this._rtol,
-      this._atol,
+      this._atol
     );
 
     return standard.conjugate(moveBdryToInfinity);
