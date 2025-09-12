@@ -106,9 +106,8 @@ export class UhpGeometry {
     const tangent = new ComplexNumber(
       -Math.sin(basePosition),
       Math.cos(basePosition),
-    );
+    ).scale(headingRight ? -1 : 1);
 
-    if (headingRight) tangent.scale(-1);
     return tangent;
   }
 
