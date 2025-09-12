@@ -1,4 +1,3 @@
-import { UhpIsometry } from "./isometries.js";
 import { UhpPoint } from "./points.js";
 
 export type UhpGeodesic = {
@@ -40,8 +39,3 @@ export type UhpFixedPoints =
   | [UhpPoint, UhpPoint] // hyperbolic
   | UhpPoint // parabolic (type: boundary) or elliptic (type: interior)
   | null; // identity, because it actually fixes all points
-
-export interface UhpConjugateInfo {
-  isConjugate: boolean;
-  conjugation: UhpIsometry | null;
-}
