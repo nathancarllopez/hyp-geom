@@ -2,12 +2,12 @@ import { describe, it, expect } from "vitest";
 import { UhpGeometry } from "../../src/upper-half-plane/geometry.js";
 import { getUhpPoints } from "../../src/upper-half-plane/points.js";
 import { ComplexNumber } from "../../src/general-math/complex-numbers.js";
+import { randomReal, randomUhpPoint } from "../helpers/random.js";
 
 describe("Upper half plane geometry (upper-half-plane/geometry.ts)", () => {
-  const rtol = 1e-5;
-  const atol = 1e-8;
-  const geom = new UhpGeometry(rtol, atol);
-  const { factory, constants } = getUhpPoints(rtol, atol);
+  const geom = new UhpGeometry();
+  const { factory, constants } = getUhpPoints();
+  const { I, ONE, NEGONE, INFINITY } = constants;
 
   describe("constructor", () => {
     it("throws error for negative tolerances in constructor", () => {
@@ -16,36 +16,69 @@ describe("Upper half plane geometry (upper-half-plane/geometry.ts)", () => {
     });
 
     it("sets and gets rtol and atol", () => {
-      geom.rtol = 1e-4;
-      geom.atol = 1e-7;
-      expect(geom.rtol).toBeCloseTo(1e-4);
-      expect(geom.atol).toBeCloseTo(1e-7);
-      geom.rtol = 1e-5;
-      geom.atol = 1e-8;
+      const geom = new UhpGeometry();
+
+      for (let i = 0; i < 10; i++) {
+        const rtol = randomReal(1, true);
+        const atol = randomReal(1, true);
+
+        geom.rtol = rtol;
+        geom.atol = atol;
+
+        expect(geom.rtol).toBeCloseTo(rtol);
+        expect(geom.atol).toBeCloseTo(atol);
+      }
     });
   });
 
   describe("distance function", () => {
-    it("distance returns Infinity for boundary points", () => {
-      const z = factory(1, 0);
-      const w = factory(2, 0);
-      expect(geom.distance(z, w)).toBe(Infinity);
+    it("returns 1 for the distance between i and e*i", () => {
+      const w = factory(0, Math.E);
+      expect(geom.distance(I, w)).toBeCloseTo(1);
     });
 
-    it("distance computes correct value for interior points", () => {
-      const z = factory(1, 1);
-      const w = factory(2, 1);
-      const expected =
-        2 * Math.asinh(z.eucDistance(w) / (2 * Math.sqrt(z.im * w.im)));
-      expect(geom.distance(z, w)).toBeCloseTo(expected);
+    it("returns ln(b) for the distance between i and b*i", () => {
+      for (let i = 0; i < 10; i++) {
+        const im = randomReal(undefined, true);
+        const z = factory(0, im);
+        expect(geom.distance(I, z)).toBeCloseTo(Math.log(im));
+      }
+    });
+
+    it("returns Infinity for boundary points", () => {
+      for (let i = 0; i < 10; i++) {
+        const z = randomUhpPoint();
+        const bdry = randomUhpPoint("boundary");
+        expect(geom.distance(z, bdry)).toBe(Infinity);
+      }
+    });
+
+    it("is the same if the order of the inputs switches", () => {
+      for (let i = 0; i < 10; i++) {
+        const z = randomUhpPoint();
+        const w = randomUhpPoint();
+        expect(geom.distance(z, w)).toBeCloseTo(geom.distance(w, z));
+      }
     });
   });
 
   describe("positionOnGeodesic", () => {
-    it("positionOnGeodesic throws for vertical geodesic", () => {
+    it("throws for vertical geodesic", () => {
       const z = factory(1, 1);
       const geod = geom.geodesicWithPointAtInfinity(z);
       expect(() => geom.positionOnGeodesic(z, geod)).toThrow();
+    });
+
+    it("throws if the given point is not on the geodesic", () => {
+      const z = factory(1, 1);
+      const geod = geom.geodesicThroughPoints(factory(2, 2), factory(3, 3));
+      expect(() => geom.positionOnGeodesic(z, geod)).toThrow();
+    });
+
+    it("returns pi / 2 for i on the geodesic with endpoints 1 and -1", () => {
+      const geod = geom.geodesicThroughPoints(ONE, NEGONE);
+      const pos = geom.positionOnGeodesic(I, geod);
+      expect(pos).toBeCloseTo(Math.PI / 2);
     });
   });
 
@@ -54,18 +87,126 @@ describe("Upper half plane geometry (upper-half-plane/geometry.ts)", () => {
       const z = factory(1, 1);
       const w = factory(1, 2);
       const tangent = geom.tangentAtPointOnGeodesic(z, w);
+
+      expect(tangent.isEqualTo(I)).toBe(true);
+    });
+
+    it("returns correct direction for downward vertical geodesic", () => {
+      const z = factory(1, 2);
+      const w = factory(1, 1);
+      const tangent = geom.tangentAtPointOnGeodesic(z, w);
       expect(tangent.re).toBe(0);
-      expect(tangent.im).toBe(1);
+      expect(tangent.im).toBe(-1);
+    });
+
+    it("returns correct tangent for non-vertical geodesic (right)", () => {
+      const tangent = geom.tangentAtPointOnGeodesic(I, ONE);
+      
+      expect(tangent.isEqualTo(ONE)).toBe(true);
+    });
+
+    it("returns correct tangent for non-vertical geodesic (left)", () => {
+      const tangent = geom.tangentAtPointOnGeodesic(I, NEGONE);
+      
+      expect(tangent.isEqualTo(NEGONE)).toBe(true);
+    });
+
+    it("returns equal but opposite tangent if the direction point is on different sides of the base", () => {
+      for (let i = 0; i < 10; i++) {
+        const real = randomReal();
+        const disp = randomReal();
+        const ePoint1 = factory(real, 0);
+        const ePoint2 = factory(real + disp, 0);
+        
+        const { center, radius } = geom.geodesicThroughPoints(ePoint1, ePoint2);
+        const theta = randomReal(Math.PI, true);
+        const basePoint = factory(radius * Math.cos(theta) + center.re, radius * Math.sin(theta));
+        
+        const tangent1 = geom.tangentAtPointOnGeodesic(basePoint, ePoint1);
+        const tangent2 = geom.tangentAtPointOnGeodesic(basePoint, ePoint2);
+
+        expect(tangent1.isEqualTo(tangent2.scale(-1))).toBe(true);
+      }
+    })
+
+    it("throws if basePoint and dirPoint are equal", () => {
+      const z = factory(1, 1);
+      expect(() => geom.tangentAtPointOnGeodesic(z, z)).toThrow();
     });
   });
 
   describe("angleFromThreePoints", () => {
+    it("returns valid angle for random valid points", () => {
+      let counter = 0;
+
+      while (counter < 10) {
+        const p = randomUhpPoint("interior");
+        const q = randomUhpPoint("interior");
+        const r = randomUhpPoint("interior");
+        if (!q.isEqualTo(r) && q.subType !== "infinity") {
+          counter++;
+          const angle = geom.angleFromThreePoints(p, q, r);
+          expect(angle).toBeGreaterThanOrEqual(0);
+          expect(angle).toBeLessThanOrEqual(Math.PI);
+        }
+      }
+    });
+
     it("angleFromThreePoints returns 0 for infinity or equal points", () => {
+      for (let i = 0; i < 10; i++) {
+        const p = randomUhpPoint();
+        const r = randomUhpPoint();
+
+        expect(geom.angleFromThreePoints(p, INFINITY, r)).toBe(0);
+        expect(geom.angleFromThreePoints(p, r, p)).toBe(0);
+      }
+    });
+
+    it("returns pi/2 for three points forming a right angle at the middle", () => {
+      const twoI = factory(0, 2);
+      const right = geom.angleFromThreePoints(ONE, I, twoI);
+      expect(right).toBeCloseTo(Math.PI / 2);
+    });
+
+    it("returns pi for three collinear points on a vertical geodesic", () => {
       const p = factory(1, 1);
-      const q = constants.INFINITY;
-      const r = factory(1, 1);
-      expect(geom.angleFromThreePoints(p, q, r)).toBe(0);
-      expect(geom.angleFromThreePoints(p, p, r)).toBe(0);
+      const q = factory(1, 2);
+      const r = factory(1, 3);
+      const angle = geom.angleFromThreePoints(p, q, r);
+      expect(angle).toBeCloseTo(Math.PI);
+    });
+
+    it("returns pi for three collinear points on an arbitrary geodesic", () => {
+      for (let i = 0; i < 10; i++) {
+        const real = randomReal();
+        const disp = randomReal();
+        const ePoint1 = factory(real, 0);
+        const ePoint2 = factory(real + disp, 0);
+        const { center, radius } = geom.geodesicThroughPoints(ePoint1, ePoint2);
+        
+        const theta = randomReal(Math.PI, true);
+        const q = factory(radius * Math.cos(theta) + center.re, radius * Math.sin(theta));
+        const angle = geom.angleFromThreePoints(ePoint1, q, ePoint2);
+
+        expect(angle).toBeCloseTo(Math.PI);
+      }
+    });
+
+    it("returns the same angle when the order of the points is reversed", () => {
+      let counter = 0;
+
+      while (counter < 10) {
+        const p = randomUhpPoint("interior");
+        const q = randomUhpPoint("interior");
+        const r = randomUhpPoint("interior");
+
+        if (!q.isEqualTo(r) && q.subType !== "infinity") {
+          counter++
+          const angle1 = geom.angleFromThreePoints(p, q, r);
+          const angle2 = geom.angleFromThreePoints(r, q, p);
+          expect(angle1).toBeCloseTo(angle2);
+        }
+      }
     });
   });
 
