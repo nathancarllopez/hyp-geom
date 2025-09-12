@@ -1,11 +1,5 @@
 import { isPositiveNumber, nearlyEqual } from "../util.js";
 
-interface ComplexNumberInterface {
-  re: number;
-  im: number;
-  modulus: number;
-}
-
 export function getComplexNumbers(
   rtol: number = 1e-5,
   atol: number = 1e-8,
@@ -32,7 +26,7 @@ export function getComplexNumbers(
   };
 }
 
-export class ComplexNumber implements ComplexNumberInterface {
+export class ComplexNumber {
   readonly re: number;
   readonly im: number;
   readonly modulus: number;
